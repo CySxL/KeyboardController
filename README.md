@@ -2,7 +2,7 @@
 Control your Keyboard
 
 ## Compatibility
-iOS 8 and above
+iOS 8 and above. Rootful, rootless, and roothide jailbreaks.
 
 ## Features:
 * UI Style (Default, Light, Dark)
@@ -40,6 +40,11 @@ iOS 8 and above
 * Selecting skin tone for emoji (Default, Disable)
 * Beta Options:
 	- One-Handed Keyboard (Default, Force Left, Force Right) (iOS 11+)
+	- One-Handed Keyboard Gesture (iOS 11+):
+		- Swipe down on the 123 key to switch to the left one-handed keyboard
+		- Swipe down on the delete key to switch to the right one-handed keyboard
+		- Swipe down again on the same key to return to center
+		- Each direction has its own independent enable switch, so a key you leave disabled keeps typing normally
 	- Blue Theming of Keyboard (Default, Disable, Enable)
 
 **Configure options from Settings.**
