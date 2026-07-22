@@ -272,6 +272,12 @@ NSMutableDictionary *tweakSettings;
 	[linkGithub setProperty:[UIImage imageWithContentsOfFile:@"/Library/PreferenceBundles/KeyboardControllerSettings.bundle/icons/github.png"] forKey:@"iconImage"];
 	[linkGithub setProperty:@YES forKey:@"hasIcon"];
 	[_standardSpecifiers addObject:linkGithub];
+
+	PSSpecifier *linkCySxLGithub = [self createButtonSpecifierNamed:@"CySxL @ Github (iOS 16 maintainer)"];
+	linkCySxLGithub->action = @selector(CySxLAtGithub);
+	[linkCySxLGithub setProperty:[UIImage imageWithContentsOfFile:@"/Library/PreferenceBundles/KeyboardControllerSettings.bundle/icons/github.png"] forKey:@"iconImage"];
+	[linkCySxLGithub setProperty:@YES forKey:@"hasIcon"];
+	[_standardSpecifiers addObject:linkCySxLGithub];
 }
 - (void)setPreferenceValue:(id)value specifier:(PSSpecifier*)specifier {
 	[super setPreferenceValue:value specifier:specifier];
@@ -316,6 +322,11 @@ NSMutableDictionary *tweakSettings;
 - (void)TomaszPoliszukAtGithub {
 	UIApplication *application = [UIApplication sharedApplication];
 	NSURL *githubProfileURL = [NSURL URLWithString:@"https://github.com/tomaszpoliszuk/"];
+	[application openURL:githubProfileURL options:@{} completionHandler:nil];
+}
+- (void)CySxLAtGithub {
+	UIApplication *application = [UIApplication sharedApplication];
+	NSURL *githubProfileURL = [NSURL URLWithString:@"https://github.com/CySxL/"];
 	[application openURL:githubProfileURL options:@{} completionHandler:nil];
 }
 @end
