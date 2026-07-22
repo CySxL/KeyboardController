@@ -25,13 +25,30 @@
 	[specifier setProperty:key forKey:@"id"];
 	return specifier;
 }
-//	- (PSSpecifier *)createGroupSpecifierNamed:(NSString *)name footer:(NSString *)footer key:(NSString *)key {
-//		PSSpecifier *specifier = [PSSpecifier groupSpecifierWithHeader:name footer:footer];
-//		[specifier setProperty:name forKey:@"label"];
-//		[specifier setProperty:key forKey:@"key"];
-//		[specifier setProperty:key forKey:@"id"];
-//		return specifier;
-//	}
+- (PSSpecifier *)createGroupSpecifierNamed:(NSString *)name footer:(NSString *)footer key:(NSString *)key {
+	PSSpecifier *specifier = [PSSpecifier groupSpecifierWithHeader:name footer:footer];
+	[specifier setProperty:name forKey:@"label"];
+	[specifier setProperty:key forKey:@"key"];
+	[specifier setProperty:key forKey:@"id"];
+	return specifier;
+}
+- (PSSpecifier *)createSwitchSpecifierNamed:(NSString *)name key:(NSString *)key default:(NSString *)defaultValue {
+	PSSpecifier *specifier = [PSSpecifier preferenceSpecifierNamed:name
+		target:self
+		set:@selector(setPreferenceValue:specifier:)
+		get:@selector(readPreferenceValue:)
+		detail:nil
+		cell:PSSwitchCell
+		edit:nil
+	];
+	[specifier setProperty:name forKey:@"label"];
+	[specifier setProperty:key forKey:@"key"];
+	[specifier setProperty:key forKey:@"id"];
+	[specifier setProperty:defaultValue forKey:@"default"];
+	[specifier setProperty:@kPackageName forKey:@"defaults"];
+	[specifier setProperty:kSettingsChanged forKey:@"PostNotification"];
+	return specifier;
+}
 - (PSSpecifier *)createSegmentSpecifierNamed:(NSString *)name key:(NSString *)key default:(NSString *)defaultValue {
 	PSSpecifier *specifier = [PSSpecifier preferenceSpecifierNamed:name
 		target:self
@@ -126,6 +143,21 @@
 			PSSpecifier *oneHandedKeyboard = [self createSegmentSpecifierNamed:@"oneHandedKeyboard" key:@"oneHandedKeyboard" default:@"999"];
 			[oneHandedKeyboard setValues:@[ @"999", @"2", @"1" ] titles:@[ @"Default", @"Force Left", @"Force Right" ]];
 			[_specifiers addObject:oneHandedKeyboard];
+
+			PSSpecifier *oneHandedGestureLeftGroup = [self createGroupSpecifierNamed:@"Left One-Handed Keyboard" footer:@"Swipe downward on the 123 key to switch to the left one-handed keyboard. Swipe down again to return to center." key:@"oneHandedGestureLeftGroup"];
+			[_specifiers addObject:oneHandedGestureLeftGroup];
+
+			PSSpecifier *oneHandedGestureLeft = [self createSwitchSpecifierNamed:@"Swipe down on 123 key" key:@"oneHandedGestureLeft" default:@"0"];
+			[_specifiers addObject:oneHandedGestureLeft];
+
+			PSSpecifier *oneHandedGestureRightGroup = [self createGroupSpecifierNamed:@"Right One-Handed Keyboard" footer:@"Swipe downward on the delete key or the enter/return key to switch to the right one-handed keyboard. Swipe down again on the same key to return to center. Each key has its own switch, so the one you leave off keeps working normally." key:@"oneHandedGestureRightGroup"];
+			[_specifiers addObject:oneHandedGestureRightGroup];
+
+			PSSpecifier *oneHandedGestureRight = [self createSwitchSpecifierNamed:@"Swipe down on delete key" key:@"oneHandedGestureRight" default:@"0"];
+			[_specifiers addObject:oneHandedGestureRight];
+
+			PSSpecifier *oneHandedGestureReturn = [self createSwitchSpecifierNamed:@"Swipe down on enter/return key" key:@"oneHandedGestureReturn" default:@"0"];
+			[_specifiers addObject:oneHandedGestureReturn];
 		}
 
 		PSSpecifier *useBlueThemingForKeyGroup = [self createGroupSpecifierNamed:@"Blue Theming of Keyboard" key:@"useBlueThemingForKeyGroup"];
