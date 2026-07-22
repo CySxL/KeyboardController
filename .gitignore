@@ -17,5 +17,9 @@ $RECYCLE.BIN/
 .theos
 /packages
 
+## ASSISTANT CONFIG
+.claude
+CLAUDE.md
+
 ## PROJECT RESOURCES
 _FILES
