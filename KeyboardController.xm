@@ -23,31 +23,40 @@ static bool enableTweak;
 
 static int uiStyle;
 
-static long long defaultKeyboard;
-static long long asciiCapableKeyboard;
-static long long numbersAndPunctuationKeyboard;
-static long long urlKeyboard;
-static long long numberPadKeyboard;
-static long long phonePadKeyboard;
-static long long namePhonePadKeyboard;
-static long long emailAddressKeyboard;
-static long long decimalPadKeyboard;
-static long long twitterKeyboard;
-static long long webSearchKeyboard;
-static long long asciiCapableNumberPadKeyboard;
+#define kKeyboardTypeCount 12
 
-static long long returnKeyTypeDefault;
-static long long returnKeyTypeGo;
-static long long returnKeyTypeGoogle;
-static long long returnKeyTypeJoin;
-static long long returnKeyTypeNext;
-static long long returnKeyTypeRoute;
-static long long returnKeyTypeSearch;
-static long long returnKeyTypeSend;
-static long long returnKeyTypeYahoo;
-static long long returnKeyTypeDone;
-static long long returnKeyTypeEmergencyCall;
-static long long returnKeyTypeContinue;
+static long long keyboardTypeMap[kKeyboardTypeCount];
+static long long returnKeyTypeMap[kKeyboardTypeCount];
+
+static NSString *const keyboardTypeKeys[kKeyboardTypeCount] = {
+	@"defaultKeyboard",
+	@"asciiCapableKeyboard",
+	@"numbersAndPunctuationKeyboard",
+	@"urlKeyboard",
+	@"numberPadKeyboard",
+	@"phonePadKeyboard",
+	@"namePhonePadKeyboard",
+	@"emailAddressKeyboard",
+	@"decimalPadKeyboard",
+	@"twitterKeyboard",
+	@"webSearchKeyboard",
+	@"asciiCapableNumberPadKeyboard"
+};
+
+static NSString *const returnKeyTypeKeys[kKeyboardTypeCount] = {
+	@"returnKeyTypeDefault",
+	@"returnKeyTypeGo",
+	@"returnKeyTypeGoogle",
+	@"returnKeyTypeJoin",
+	@"returnKeyTypeNext",
+	@"returnKeyTypeRoute",
+	@"returnKeyTypeSearch",
+	@"returnKeyTypeSend",
+	@"returnKeyTypeYahoo",
+	@"returnKeyTypeDone",
+	@"returnKeyTypeEmergencyCall",
+	@"returnKeyTypeContinue"
+};
 
 static long long keyboardDismissMode;
 
@@ -62,6 +71,10 @@ static int shouldShowInternationalKey;
 static int selectingSkinToneForEmoji;
 
 static int oneHandedKeyboard;
+
+static int oneHandedGestureLeft;
+static int oneHandedGestureRight;
+static int oneHandedGestureReturn;
 
 static int useBlueThemingForKey;
 
@@ -84,45 +97,21 @@ static void SettingsChanged() {
 	} else {
 		tweakSettings = nil;
 	}
-	if (!tweakSettings) {
-		tweakSettings = [NSMutableDictionary dictionaryWithContentsOfFile:kUserSettingsFile];
-	}
 
 	enableTweak = [([tweakSettings objectForKey:@"enableTweak"] ?: @(YES)) boolValue];
 
-	uiStyle = [([tweakSettings valueForKey:@"uiStyle"] ?: @(999)) integerValue];
+	uiStyle = [([tweakSettings objectForKey:@"uiStyle"] ?: @(999)) integerValue];
 
-	defaultKeyboard = [([tweakSettings valueForKey:@"defaultKeyboard"] ?: @(0)) integerValue];
-	asciiCapableKeyboard = [([tweakSettings valueForKey:@"asciiCapableKeyboard"] ?: @(1)) integerValue];
-	numbersAndPunctuationKeyboard = [([tweakSettings valueForKey:@"numbersAndPunctuationKeyboard"] ?: @(2)) integerValue];
-	urlKeyboard = [([tweakSettings valueForKey:@"urlKeyboard"] ?: @(3)) integerValue];
-	numberPadKeyboard = [([tweakSettings valueForKey:@"numberPadKeyboard"] ?: @(4)) integerValue];
-	phonePadKeyboard = [([tweakSettings valueForKey:@"phonePadKeyboard"] ?: @(5)) integerValue];
-	namePhonePadKeyboard = [([tweakSettings valueForKey:@"namePhonePadKeyboard"] ?: @(6)) integerValue];
-	emailAddressKeyboard = [([tweakSettings valueForKey:@"emailAddressKeyboard"] ?: @(7)) integerValue];
-	decimalPadKeyboard = [([tweakSettings valueForKey:@"decimalPadKeyboard"] ?: @(8)) integerValue];
-	twitterKeyboard = [([tweakSettings valueForKey:@"twitterKeyboard"] ?: @(9)) integerValue];
-	webSearchKeyboard = [([tweakSettings valueForKey:@"webSearchKeyboard"] ?: @(10)) integerValue];
-	asciiCapableNumberPadKeyboard = [([tweakSettings valueForKey:@"asciiCapableNumberPadKeyboard"] ?: @(11)) integerValue];
+	for ( int i = 0; i < kKeyboardTypeCount; i++ ) {
+		keyboardTypeMap[i] = [([tweakSettings objectForKey:keyboardTypeKeys[i]] ?: @(i)) integerValue];
+		returnKeyTypeMap[i] = [([tweakSettings objectForKey:returnKeyTypeKeys[i]] ?: @(i)) integerValue];
+	}
 
-	returnKeyTypeDefault = [([tweakSettings valueForKey:@"returnKeyTypeDefault"] ?: @(0)) integerValue];
-	returnKeyTypeGo = [([tweakSettings valueForKey:@"returnKeyTypeGo"] ?: @(1)) integerValue];
-	returnKeyTypeGoogle = [([tweakSettings valueForKey:@"returnKeyTypeGoogle"] ?: @(2)) integerValue];
-	returnKeyTypeJoin = [([tweakSettings valueForKey:@"returnKeyTypeJoin"] ?: @(3)) integerValue];
-	returnKeyTypeNext = [([tweakSettings valueForKey:@"returnKeyTypeNext"] ?: @(4)) integerValue];
-	returnKeyTypeRoute = [([tweakSettings valueForKey:@"returnKeyTypeRoute"] ?: @(5)) integerValue];
-	returnKeyTypeSearch = [([tweakSettings valueForKey:@"returnKeyTypeSearch"] ?: @(6)) integerValue];
-	returnKeyTypeSend = [([tweakSettings valueForKey:@"returnKeyTypeSend"] ?: @(7)) integerValue];
-	returnKeyTypeYahoo = [([tweakSettings valueForKey:@"returnKeyTypeYahoo"] ?: @(8)) integerValue];
-	returnKeyTypeDone = [([tweakSettings valueForKey:@"returnKeyTypeDone"] ?: @(9)) integerValue];
-	returnKeyTypeEmergencyCall = [([tweakSettings valueForKey:@"returnKeyTypeEmergencyCall"] ?: @(10)) integerValue];
-	returnKeyTypeContinue = [([tweakSettings valueForKey:@"returnKeyTypeContinue"] ?: @(11)) integerValue];
+	keyboardDismissMode = [([tweakSettings objectForKey:@"keyboardDismissMode"] ?: @(999)) integerValue];
 
-	keyboardDismissMode = [([tweakSettings valueForKey:@"keyboardDismissMode"] ?: @(999)) integerValue];
+	trackpadMode = [([tweakSettings objectForKey:@"trackpadMode"] ?: @(999)) integerValue];
 
-	trackpadMode = [([tweakSettings valueForKey:@"trackpadMode"] ?: @(999)) integerValue];
-
-	returnKeyStyling = [([tweakSettings valueForKey:@"returnKeyStyling"] ?: @(999)) integerValue];
+	returnKeyStyling = [([tweakSettings objectForKey:@"returnKeyStyling"] ?: @(999)) integerValue];
 
 	dictationButton = [([tweakSettings objectForKey:@"dictationButton"] ?: @(999)) integerValue];
 
@@ -130,7 +119,11 @@ static void SettingsChanged() {
 
 	selectingSkinToneForEmoji = [([tweakSettings objectForKey:@"selectingSkinToneForEmoji"] ?: @(999)) integerValue];
 
-	oneHandedKeyboard = [([tweakSettings valueForKey:@"oneHandedKeyboard"] ?: @(999)) integerValue];
+	oneHandedKeyboard = [([tweakSettings objectForKey:@"oneHandedKeyboard"] ?: @(999)) integerValue];
+
+	oneHandedGestureLeft = [([tweakSettings objectForKey:@"oneHandedGestureLeft"] ?: @(0)) boolValue];
+	oneHandedGestureRight = [([tweakSettings objectForKey:@"oneHandedGestureRight"] ?: @(0)) boolValue];
+	oneHandedGestureReturn = [([tweakSettings objectForKey:@"oneHandedGestureReturn"] ?: @(0)) boolValue];
 
 	useBlueThemingForKey = [([tweakSettings objectForKey:@"useBlueThemingForKey"] ?: @(999)) integerValue];
 
@@ -149,6 +142,108 @@ static void receivedNotification(
 	SettingsChanged();
 }
 
+static long long gestureHandBias = -1;
+
+enum { keyNone = 0, keyMore = 1, keyDelete = 2, keyReturn = 3 };
+
+static const CGFloat biasSwipeThreshold = 18.0;
+
+@interface UIKeyboardLayoutStar : UIView
+- (id)keyHitTest:(CGPoint)point;
+@end
+
+@interface UIKBTree : NSObject
+- (NSString *)representedString;
+- (NSString *)displayString;
+@end
+
+static int classifyKey(id key) {
+	if ( !key ) {
+		return keyNone;
+	}
+	NSString *rep = [key respondsToSelector:@selector(representedString)] ? [key representedString] : nil;
+	NSString *disp = [key respondsToSelector:@selector(displayString)] ? [key displayString] : nil;
+	if ( [rep isEqualToString:@"More"] || [disp isEqualToString:@"123"] || [disp isEqualToString:@"#+="] || [disp isEqualToString:@"ABC"] ) {
+		return keyMore;
+	}
+	if ( [rep isEqualToString:@"Delete"] ) {
+		return keyDelete;
+	}
+	if ( [rep isEqualToString:@"\n"] || [rep isEqualToString:@"\r"] || [rep isEqualToString:@"Return"] ) {
+		return keyReturn;
+	}
+	return keyNone;
+}
+
+static void applyHandBias(UIView *layout) {
+	Class implClass = %c(UIKeyboardImpl);
+	id impl = nil;
+	if ( [implClass respondsToSelector:@selector(activeInstance)] ) {
+		impl = [implClass performSelector:@selector(activeInstance)];
+	} else if ( [implClass respondsToSelector:@selector(sharedInstance)] ) {
+		impl = [implClass performSelector:@selector(sharedInstance)];
+	}
+	if ( impl && [impl respondsToSelector:@selector(updateLayout)] ) {
+		[impl performSelector:@selector(updateLayout)];
+	}
+	if ( layout ) {
+		[layout setNeedsLayout];
+		[layout layoutIfNeeded];
+	}
+}
+
+static int classifyKeyByGeometry(CGPoint point, CGRect bounds) {
+	if ( bounds.size.width <= 0 || bounds.size.height <= 0 ) {
+		return keyNone;
+	}
+	CGFloat x = point.x / bounds.size.width;
+	CGFloat y = point.y / bounds.size.height;
+	if ( y < 0.70 ) {
+		return keyNone;
+	}
+	if ( x < 0.18 ) {
+		return keyMore;
+	}
+	if ( x > 0.82 ) {
+		return keyReturn;
+	}
+	return keyNone;
+}
+
+@interface KeyboardControllerHandBiasGesture : UIPanGestureRecognizer <UIGestureRecognizerDelegate>
+@property (nonatomic, assign) int startKind;
+@property (nonatomic, weak) UIKeyboardLayoutStar *layout;
+@end
+
+@implementation KeyboardControllerHandBiasGesture
+- (BOOL)gestureRecognizer:(UIGestureRecognizer *)gestureRecognizer shouldReceiveTouch:(UITouch *)touch {
+	UIKeyboardLayoutStar *layout = self.layout;
+	if ( !layout ) {
+		self.startKind = keyNone;
+		return NO;
+	}
+	CGPoint point = [touch locationInView:layout];
+	int kind = keyNone;
+	if ( [layout respondsToSelector:@selector(keyHitTest:)] ) {
+		kind = classifyKey([layout keyHitTest:point]);
+	}
+	if ( kind == keyNone ) {
+		kind = classifyKeyByGeometry(point, layout.bounds);
+	}
+	if ( ( kind == keyMore && !oneHandedGestureLeft )
+		|| ( kind == keyDelete && !oneHandedGestureRight )
+		|| ( kind == keyReturn && !oneHandedGestureReturn ) ) {
+		kind = keyNone;
+	}
+	self.startKind = kind;
+	return kind != keyNone;
+}
+- (BOOL)gestureRecognizer:(UIGestureRecognizer *)gestureRecognizer shouldRecognizeSimultaneouslyWithGestureRecognizer:(UIGestureRecognizer *)otherGestureRecognizer {
+	return YES;
+}
+@end
+
+
 %hook UITextInputTraits
 - (long long)keyboardAppearance {
 	long long origValue = %orig;
@@ -159,87 +254,21 @@ static void receivedNotification(
 }
 - (long long)keyboardType {
 	long long origValue = %orig;
-	if ( enableTweak && origValue == 0 ) {
-		return defaultKeyboard;
-	} else if ( enableTweak && origValue == 1 ) {
-		return asciiCapableKeyboard;
-	} else if ( enableTweak && origValue == 2 ) {
-		return numbersAndPunctuationKeyboard;
-	} else if ( enableTweak && origValue == 3 ) {
-		return urlKeyboard;
-	} else if ( enableTweak && origValue == 4 ) {
-		return numberPadKeyboard;
-	} else if ( enableTweak && origValue == 5 ) {
-		return phonePadKeyboard;
-	} else if ( enableTweak && origValue == 6 ) {
-		return namePhonePadKeyboard;
-	} else if ( enableTweak && origValue == 7 ) {
-		return emailAddressKeyboard;
-	} else if ( enableTweak && origValue == 8 ) {
-		return decimalPadKeyboard;
-	} else if ( enableTweak && origValue == 9 ) {
-		return twitterKeyboard;
-	} else if ( enableTweak && origValue == 10 ) {
-		return webSearchKeyboard;
-	} else if ( enableTweak && origValue == 11 ) {
-		return asciiCapableNumberPadKeyboard;
+	if ( enableTweak && origValue >= 0 && origValue < kKeyboardTypeCount ) {
+		return keyboardTypeMap[origValue];
 	}
 	return origValue;
 }
 - (void)setKeyboardType:(long long)keyboardType {
-	if ( enableTweak && keyboardType == 0 ) {
-		keyboardType = defaultKeyboard;
-	} else if ( enableTweak && keyboardType == 1 ) {
-		keyboardType = asciiCapableKeyboard;
-	} else if ( enableTweak && keyboardType == 2 ) {
-		keyboardType = numbersAndPunctuationKeyboard;
-	} else if ( enableTweak && keyboardType == 3 ) {
-		keyboardType = urlKeyboard;
-	} else if ( enableTweak && keyboardType == 4 ) {
-		keyboardType = numberPadKeyboard;
-	} else if ( enableTweak && keyboardType == 5 ) {
-		keyboardType = phonePadKeyboard;
-	} else if ( enableTweak && keyboardType == 6 ) {
-		keyboardType = namePhonePadKeyboard;
-	} else if ( enableTweak && keyboardType == 7 ) {
-		keyboardType = emailAddressKeyboard;
-	} else if ( enableTweak && keyboardType == 8 ) {
-		keyboardType = decimalPadKeyboard;
-	} else if ( enableTweak && keyboardType == 9 ) {
-		keyboardType = twitterKeyboard;
-	} else if ( enableTweak && keyboardType == 10 ) {
-		keyboardType = webSearchKeyboard;
-	} else if ( enableTweak && keyboardType == 11 ) {
-		keyboardType = asciiCapableNumberPadKeyboard;
+	if ( enableTweak && keyboardType >= 0 && keyboardType < kKeyboardTypeCount ) {
+		keyboardType = keyboardTypeMap[keyboardType];
 	}
 	%orig(keyboardType);
 }
 - (long long)returnKeyType {
 	long long origValue = %orig;
-	if ( origValue == 0 && enableTweak ) {
-		return returnKeyTypeDefault;
-	} else if ( origValue == 1 && enableTweak ) {
-		return returnKeyTypeGo;
-	} else if ( origValue == 2 && enableTweak ) {
-		return returnKeyTypeGoogle;
-	} else if ( origValue == 3 && enableTweak ) {
-		return returnKeyTypeJoin;
-	} else if ( origValue == 4 && enableTweak ) {
-		return returnKeyTypeNext;
-	} else if ( origValue == 5 && enableTweak ) {
-		return returnKeyTypeRoute;
-	} else if ( origValue == 6 && enableTweak ) {
-		return returnKeyTypeSearch;
-	} else if ( origValue == 7 && enableTweak ) {
-		return returnKeyTypeSend;
-	} else if ( origValue == 8 && enableTweak ) {
-		return returnKeyTypeYahoo;
-	} else if ( origValue == 9 && enableTweak ) {
-		return returnKeyTypeDone;
-	} else if ( origValue == 10 && enableTweak ) {
-		return returnKeyTypeEmergencyCall;
-	} else if ( origValue == 11 && enableTweak ) {
-		return returnKeyTypeContinue;
+	if ( enableTweak && origValue >= 0 && origValue < kKeyboardTypeCount ) {
+		return returnKeyTypeMap[origValue];
 	}
 	return origValue;
 }
@@ -286,13 +315,55 @@ static void receivedNotification(
 %hook UIKeyboardLayoutStar
 - (long long)currentHandBias {
 	long long origValue = %orig;
+	if ( enableTweak && ( oneHandedGestureLeft || oneHandedGestureRight || oneHandedGestureReturn ) && gestureHandBias != -1 ) {
+		return gestureHandBias;
+	}
 	if ( enableTweak && oneHandedKeyboard != 999 ) {
 		return oneHandedKeyboard;
 	}
 	return origValue;
 }
+- (void)didMoveToWindow {
+	%orig;
+	if ( !enableTweak || ( !oneHandedGestureLeft && !oneHandedGestureRight && !oneHandedGestureReturn ) || !self.window ) {
+		return;
+	}
+	for ( UIGestureRecognizer *recognizer in self.gestureRecognizers ) {
+		if ( [recognizer isKindOfClass:[KeyboardControllerHandBiasGesture class]] ) {
+			return;
+		}
+	}
+	KeyboardControllerHandBiasGesture *pan = [[KeyboardControllerHandBiasGesture alloc] initWithTarget:self action:@selector(handleHandBiasPan:)];
+	pan.minimumNumberOfTouches = 1;
+	pan.maximumNumberOfTouches = 1;
+	pan.layout = self;
+	pan.delegate = pan;
+	[self addGestureRecognizer:pan];
+}
+%new
+- (void)handleHandBiasPan:(UIPanGestureRecognizer *)pan {
+	if ( pan.state != UIGestureRecognizerStateEnded ) {
+		return;
+	}
+	if ( ![pan isKindOfClass:[KeyboardControllerHandBiasGesture class]] ) {
+		return;
+	}
+	int startKind = ((KeyboardControllerHandBiasGesture *)pan).startKind;
+	CGPoint translation = [pan translationInView:self];
+	BOOL swipedDown = ( translation.y > biasSwipeThreshold ) && ( fabs(translation.y) > fabs(translation.x) );
+	if ( !swipedDown ) {
+		return;
+	}
+	if ( startKind == keyMore && oneHandedGestureLeft ) {
+		gestureHandBias = ( gestureHandBias == 2 ) ? 0 : 2;
+		applyHandBias(self);
+	} else if ( ( startKind == keyDelete && oneHandedGestureRight ) || ( startKind == keyReturn && oneHandedGestureReturn ) ) {
+		gestureHandBias = ( gestureHandBias == 1 ) ? 0 : 1;
+		applyHandBias(self);
+	}
+}
 - (void)_setBiasEscapeButtonVisible:(int)arg1 {
-	if ( enableTweak && oneHandedKeyboard != 999 ) {
+	if ( enableTweak && ( oneHandedKeyboard != 999 || ( ( oneHandedGestureLeft || oneHandedGestureRight || oneHandedGestureReturn ) && gestureHandBias > 0 ) ) ) {
 		%orig(0);
 	} else {
 		%orig;
@@ -305,22 +376,6 @@ static void receivedNotification(
 	}
 	return origValue;
 }
-//		- (void)playKeyClickSoundForKey:(id)arg1 {
-//			%orig;
-//			NSLog(@"[KeyboardController] UIKeyboardLayoutStar playKeyClickSoundForKey arg1 = %@", arg1);
-//		}
-//		- (void)playKeyClickSoundOnDownForKey:(id)arg1 {
-//			%orig;
-//			NSLog(@"[KeyboardController] UIKeyboardLayoutStar playKeyClickSoundOnDownForKey arg1 = %@", arg1);
-//		}
-//		- (void)playKeyClickSoundOnUpForKey:(id)arg1 {
-//			%orig;
-//			NSLog(@"[KeyboardController] UIKeyboardLayoutStar playKeyClickSoundOnUpForKey arg1 = %@", arg1);
-//		}
-//		- (void)playKeyReleaseSoundForKey:(id)arg1 {
-//			%orig;
-//			NSLog(@"[KeyboardController] UIKeyboardLayoutStar playKeyReleaseSoundForKey arg1 = %@", arg1);
-//		}
 %end
 
 %hook UIKeyboardSplitTransitionView
@@ -462,79 +517,6 @@ static void receivedNotification(
 %end
 
 %end
-
-//	%hook UIKeyboardLayout
-//	- (void)touchDown:(id)arg1 {
-//		%orig;
-//	NSLog(@"[KeyboardController] UIKeyboardLayout touchDown arg1 = %@", arg1);
-//		if (@available(iOS 13, *)) {
-//			if ( ![[NSProcessInfo processInfo] isLowPowerModeEnabled] ) {
-//				int feedbackTypeName = 0;
-//				if ( feedbackWhen == 1 || feedbackType == 0 ) {
-//					return;
-//				} else if ( feedbackType == 1 ) {
-//					UISelectionFeedbackGenerator *generator = [[UISelectionFeedbackGenerator alloc] init];
-//					[generator prepare];
-//					[generator selectionChanged];
-//					generator = nil;
-//				} else if ( feedbackType == 2 ) {
-//					feedbackTypeName = UIImpactFeedbackStyleLight;
-//				} else if ( feedbackType == 3 ) {
-//					feedbackTypeName = UIImpactFeedbackStyleMedium;
-//				} else if ( feedbackType == 4 ) {
-//					feedbackTypeName = UIImpactFeedbackStyleHeavy;
-//				} else if ( feedbackType == 5 ) {
-//					feedbackTypeName = UIImpactFeedbackStyleSoft;
-//				} else if ( feedbackType == 6 ) {
-//					feedbackTypeName = UIImpactFeedbackStyleRigid;
-//				} else if ( feedbackType > 505 ) {
-//					AudioServicesPlaySystemSound(feedbackType);
-//				}
-//				if ( feedbackTypeName > 0 ) {
-//					UIImpactFeedbackGenerator *generator = [[UIImpactFeedbackGenerator alloc]initWithStyle:feedbackTypeName];
-//					[generator prepare];
-//					[generator impactOccurred];
-//					generator = nil;
-//				}
-//			}
-//		}
-//	}
-//	- (void)touchUp:(id)arg1 {
-//		%orig;
-//		NSLog(@"[KeyboardController] UIKeyboardLayout touchUp arg1 = %@", arg1);
-//		if (@available(iOS 13, *)) {
-//			if ( ![[NSProcessInfo processInfo] isLowPowerModeEnabled] ) {
-//				int feedbackTypeName = 0;
-//				if ( feedbackWhen == 0 || feedbackType == 0 ) {
-//					return;
-//				} else if ( feedbackType == 1 && feedbackWhen == 1 ) {
-//					UISelectionFeedbackGenerator *generator = [[UISelectionFeedbackGenerator alloc] init];
-//					[generator prepare];
-//					[generator selectionChanged];
-//					generator = nil;
-//				} else if (feedbackType == 2) {
-//					feedbackTypeName = UIImpactFeedbackStyleLight;
-//				} else if ( feedbackType == 3 ) {
-//					feedbackTypeName = UIImpactFeedbackStyleMedium;
-//				} else if ( feedbackType == 4 ) {
-//					feedbackTypeName = UIImpactFeedbackStyleHeavy;
-//				} else if ( feedbackType == 5 ) {
-//					feedbackTypeName = UIImpactFeedbackStyleSoft;
-//				} else if ( feedbackType == 6 ) {
-//					feedbackTypeName = UIImpactFeedbackStyleRigid;
-//				} else if ( feedbackType > 505 ) {
-//					AudioServicesPlaySystemSound(feedbackType);
-//				}
-//				if ( feedbackTypeName > 0 ) {
-//					UIImpactFeedbackGenerator *generator = [[UIImpactFeedbackGenerator alloc]initWithStyle:feedbackTypeName];
-//					[generator prepare];
-//					[generator impactOccurred];
-//					generator = nil;
-//				}
-//			}
-//		}
-//	}
-//	%end
 
 %ctor {
 	if ( [ [ [ [NSProcessInfo processInfo] arguments] objectAtIndex:0] containsString:@"SpringBoard.app" ]

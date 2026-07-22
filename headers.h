@@ -21,7 +21,6 @@
 
 #define kPackageName "com.tomaszpoliszuk.keyboardcontroller"
 #define kSettingsChanged @"com.tomaszpoliszuk.keyboardcontroller.settingschanged"
-#define kUserSettingsFile @"/var/mobile/Library/Preferences/com.tomaszpoliszuk.keyboardcontroller.plist"
 
 @interface UIView (KeyboardController)
 -(id)_viewControllerForAncestor;
