@@ -3,6 +3,9 @@ INSTALL_TARGET_PROCESSES = SpringBoard
 ifeq ($(THEOS_PACKAGE_SCHEME),rootless)
 export ARCHS = arm64 arm64e
 export TARGET = iphone:clang:14.5:15.0
+else ifeq ($(THEOS_PACKAGE_SCHEME),roothide)
+export ARCHS = arm64 arm64e
+export TARGET = iphone:clang:14.5:15.0
 else
 export ARCHS = armv7 armv7s arm64 arm64e
 export TARGET = iphone:clang:14.5:8.0

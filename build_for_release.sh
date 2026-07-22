@@ -9,3 +9,8 @@ make package FINALPACKAGE=1
 export -n DEVELOPER_DIR
 make clean
 make package FINALPACKAGE=1 THEOS_PACKAGE_SCHEME=rootless
+
+#	build for roothide jailbreaks
+export -n DEVELOPER_DIR
+make clean
+make package FINALPACKAGE=1 THEOS_PACKAGE_SCHEME=roothide
