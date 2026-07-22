@@ -17,6 +17,8 @@
 
 #include "headers.h"
 
+extern "C" NSString *PreferencesFilePath(void);
+
 NSMutableDictionary *tweakSettings;
 
 static bool enableTweak;
@@ -96,6 +98,9 @@ static void SettingsChanged() {
 		CFRelease(keyList);
 	} else {
 		tweakSettings = nil;
+	}
+	if ( !tweakSettings ) {
+		tweakSettings = [NSMutableDictionary dictionaryWithContentsOfFile:PreferencesFilePath()];
 	}
 
 	enableTweak = [([tweakSettings objectForKey:@"enableTweak"] ?: @(YES)) boolValue];
