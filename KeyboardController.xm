@@ -309,6 +309,15 @@ static int classifyKeyByGeometry(CGPoint point, CGRect bounds) {
 }
 %end
 
+%hook EMFEmojiToken
+- (BOOL)supportsSkinToneVariants {
+	if ( enableTweak && selectingSkinToneForEmoji != 999 ) {
+		return NO;
+	}
+	return %orig;
+}
+%end
+
 %hook UIKeyboardLayoutStar
 - (long long)currentHandBias {
 	long long origValue = %orig;
