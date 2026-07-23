@@ -143,12 +143,16 @@ NSMutableDictionary *tweakSettings;
 			NSArray *trackpadModeTitles = @[ @"Default", @"Disabled", @"Spacebar only", @"Enabled" ];
 			NSArray *trackpadModeValues = @[ @"999", @"404", @"505", @"1" ];
 
+			NSString *trackpadModeFooter = @"Default: only the spacebar activates the trackpad.\nDisabled: the trackpad is off on the whole keyboard.\nEnabled: the whole keyboard activates the trackpad.";
+
 			if ( ![[UIDevice currentDevice] _supportsForceTouch] ) {
 				trackpadModeTitles = @[ @"Default", @"Disabled", @"Enabled" ];
 				trackpadModeValues = @[ @"999", @"404", @"505" ];
+			} else {
+				trackpadModeFooter = @"Default: system default.\nDisabled: the trackpad is off on the whole keyboard.\nSpacebar only: only the spacebar activates the trackpad.\nEnabled: the whole keyboard activates the trackpad.";
 			}
 
-			PSSpecifier *trackpadModeGroup = [self createGroupSpecifierNamed:@"Trackpad Mode" footer:nil key:@"trackpadModeGroup"];
+			PSSpecifier *trackpadModeGroup = [self createGroupSpecifierNamed:@"Trackpad Mode" footer:trackpadModeFooter key:@"trackpadModeGroup"];
 			[_specifiers addObject:trackpadModeGroup];
 
 			PSSpecifier *trackpadMode = [self createSegmentSpecifierNamed:@"" key:@"trackpadMode" default:@"999"];
