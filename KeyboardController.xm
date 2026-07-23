@@ -80,10 +80,6 @@ static int oneHandedGestureReturn;
 
 static int useBlueThemingForKey;
 
-static int feedbackType;
-
-static int feedbackWhen;
-
 static void SettingsChanged() {
 	CFArrayRef keyList = CFPreferencesCopyKeyList(CFSTR(kPackageName), kCFPreferencesCurrentUser, kCFPreferencesAnyHost);
 	if(keyList) {
@@ -131,10 +127,6 @@ static void SettingsChanged() {
 	oneHandedGestureReturn = [([tweakSettings objectForKey:@"oneHandedGestureReturn"] ?: @(0)) boolValue];
 
 	useBlueThemingForKey = [([tweakSettings objectForKey:@"useBlueThemingForKey"] ?: @(999)) integerValue];
-
-	feedbackType = [([tweakSettings objectForKey:@"feedbackType"] ?: @(0)) integerValue];
-
-	feedbackWhen = [([tweakSettings objectForKey:@"feedbackWhen"] ?: @(0)) integerValue];
 }
 
 static void receivedNotification(
