@@ -144,7 +144,7 @@ NSMutableDictionary *tweakSettings;
 			NSArray *trackpadModeValues = @[ @"999", @"404", @"505", @"1" ];
 
 			if ( ![[UIDevice currentDevice] _supportsForceTouch] ) {
-				trackpadModeTitles = @[ @"Default", @"Disabled", @"Spacebar only" ];
+				trackpadModeTitles = @[ @"Default", @"Disabled", @"Enabled" ];
 				trackpadModeValues = @[ @"999", @"404", @"505" ];
 			}
 
