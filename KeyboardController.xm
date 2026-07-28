@@ -235,6 +235,21 @@ static int classifyKeyByGeometry(CGPoint point, CGRect bounds) {
 	self.startKind = kind;
 	return kind != keyNone;
 }
+
+- (BOOL)gestureRecognizerShouldBegin:(UIPanGestureRecognizer *)gestureRecognizer {
+	if ( ![gestureRecognizer isKindOfClass:[UIPanGestureRecognizer class]] ) {
+		return YES;
+	}
+	CGPoint velocity = [gestureRecognizer velocityInView:gestureRecognizer.view];
+	if ( fabs(velocity.x) > fabs(velocity.y) ) {
+		return NO;
+	}
+	if ( velocity.y < 50.0 ) {
+		return NO;
+	}
+	return YES;
+}
+
 - (BOOL)gestureRecognizer:(UIGestureRecognizer *)gestureRecognizer shouldRecognizeSimultaneouslyWithGestureRecognizer:(UIGestureRecognizer *)otherGestureRecognizer {
 	return YES;
 }
