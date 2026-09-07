@@ -78,6 +78,10 @@ static int oneHandedGestureReturn;
 
 static int useBlueThemingForKey;
 
+// A trait copy reads the source through these getters and writes the destination
+// ivar raw, so mapping during one applies the map a second time on the next read.
+static __thread int traitCopyDepth;
+
 static void SettingsChanged() {
 	NSMutableDictionary *tweakSettings = nil;
 	CFArrayRef keyList = CFPreferencesCopyKeyList(CFSTR(kPackageName), kCFPreferencesCurrentUser, kCFPreferencesAnyHost);
@@ -263,23 +267,27 @@ static int classifyKeyByGeometry(CGPoint point, CGRect bounds) {
 }
 - (long long)keyboardType {
 	long long origValue = %orig;
-	if ( enableTweak && origValue >= 0 && origValue < kKeyboardTypeCount ) {
+	if ( enableTweak && !traitCopyDepth && origValue >= 0 && origValue < kKeyboardTypeCount ) {
 		return keyboardTypeMap[origValue];
 	}
 	return origValue;
 }
-- (void)setKeyboardType:(long long)keyboardType {
-	if ( enableTweak && keyboardType >= 0 && keyboardType < kKeyboardTypeCount ) {
-		keyboardType = keyboardTypeMap[keyboardType];
-	}
-	%orig(keyboardType);
-}
 - (long long)returnKeyType {
 	long long origValue = %orig;
-	if ( enableTweak && origValue >= 0 && origValue < kKeyboardTypeCount ) {
+	if ( enableTweak && !traitCopyDepth && origValue >= 0 && origValue < kKeyboardTypeCount ) {
 		return returnKeyTypeMap[origValue];
 	}
 	return origValue;
+}
+- (void)takeTraitsFrom:(id)arg1 {
+	traitCopyDepth++;
+	%orig;
+	traitCopyDepth--;
+}
+- (void)takeTraitsFrom:(id)arg1 lightweight:(bool)arg2 {
+	traitCopyDepth++;
+	%orig;
+	traitCopyDepth--;
 }
 %end
 
