@@ -295,12 +295,13 @@ static int classifyKeyByGeometry(CGPoint point, CGRect bounds) {
 - (long long)keyboardDismissMode {
 	long long origValue = %orig;
 	if ( enableTweak && keyboardDismissMode != 999 ) {
+		id ancestor = [self _viewControllerForAncestor];
 		if (
-			![[self _viewControllerForAncestor] isKindOfClass:%c(UICompatibilityInputViewController)]
+			![ancestor isKindOfClass:%c(UICompatibilityInputViewController)]
 			&&
-			![[self _viewControllerForAncestor] isKindOfClass:%c(UICandidateViewController)]
+			![ancestor isKindOfClass:%c(UICandidateViewController)]
 			&&
-			![[self _viewControllerForAncestor] isKindOfClass:%c(UIInputViewController)]
+			![ancestor isKindOfClass:%c(UIInputViewController)]
 		) {
 			return keyboardDismissMode;
 		}
