@@ -82,11 +82,11 @@ static int useBlueThemingForKey;
 // ivar raw, so mapping during one applies the map a second time on the next read.
 static __thread int traitCopyDepth;
 
-static void SettingsChanged() {
-	NSMutableDictionary *tweakSettings = nil;
+static NSDictionary *LoadSettings() {
+	NSDictionary *tweakSettings = nil;
 	CFArrayRef keyList = CFPreferencesCopyKeyList(CFSTR(kPackageName), kCFPreferencesCurrentUser, kCFPreferencesAnyHost);
 	if(keyList) {
-		tweakSettings = (NSMutableDictionary *)CFBridgingRelease(
+		tweakSettings = (NSDictionary *)CFBridgingRelease(
 			CFPreferencesCopyMultiple(
 				keyList,
 				CFSTR(kPackageName),
@@ -97,9 +97,12 @@ static void SettingsChanged() {
 		CFRelease(keyList);
 	}
 	if ( !tweakSettings ) {
-		tweakSettings = [NSMutableDictionary dictionaryWithContentsOfFile:PreferencesFilePath()];
+		tweakSettings = [NSDictionary dictionaryWithContentsOfFile:PreferencesFilePath()];
 	}
+	return tweakSettings;
+}
 
+static void ApplySettings(NSDictionary *tweakSettings) {
 	enableTweak = [([tweakSettings objectForKey:@"enableTweak"] ?: @(YES)) boolValue];
 
 	uiStyle = [([tweakSettings objectForKey:@"uiStyle"] ?: @(999)) integerValue];
@@ -130,6 +133,23 @@ static void SettingsChanged() {
 	useBlueThemingForKey = [([tweakSettings objectForKey:@"useBlueThemingForKey"] ?: @(999)) integerValue];
 }
 
+// Two synchronous trips to cfprefsd, in every UIKit process, for every change a
+// settings page posts. Read on a serial queue so the order survives a burst,
+// publish on the main thread so the hooks never read a half written map.
+static void ReloadSettings() {
+	static dispatch_once_t onceToken;
+	static dispatch_queue_t settingsQueue;
+	dispatch_once(&onceToken, ^{
+		settingsQueue = dispatch_queue_create(kPackageName ".settings", DISPATCH_QUEUE_SERIAL);
+	});
+	dispatch_async(settingsQueue, ^{
+		NSDictionary *loaded = LoadSettings();
+		dispatch_async(dispatch_get_main_queue(), ^{
+			ApplySettings(loaded);
+		});
+	});
+}
+
 static void receivedNotification(
 	CFNotificationCenterRef center,
 	void *observer,
@@ -137,7 +157,7 @@ static void receivedNotification(
 	const void *object,
 	CFDictionaryRef userInfo
 ) {
-	SettingsChanged();
+	ReloadSettings();
 }
 
 static long long gestureHandBias = -1;
@@ -552,9 +572,7 @@ static int classifyKeyByGeometry(CGPoint point, CGRect bounds) {
 	if ( [ [ [ [NSProcessInfo processInfo] arguments] objectAtIndex:0] containsString:@"SpringBoard.app" ]
 	||
 	[ [ [ [NSProcessInfo processInfo] arguments] objectAtIndex:0] containsString:@"/Application" ] ) {
-		dispatch_async(dispatch_get_global_queue(QOS_CLASS_UTILITY, 0), ^{
-			SettingsChanged();
-		});
+		ReloadSettings();
 		CFNotificationCenterAddObserver(
 			CFNotificationCenterGetDarwinNotifyCenter(),
 			NULL,
