@@ -17,7 +17,10 @@
 
 #include "../headers.h"
 
-NSMutableDictionary *tweakSettings;
+static UIImage *KeyboardControllerIcon(NSString *name) {
+	NSBundle *bundle = [NSBundle bundleForClass:[KeyboardControllerMainSettings class]];
+	return [UIImage imageWithContentsOfFile:[bundle pathForResource:name ofType:@"png" inDirectory:@"icons"]];
+}
 
 @implementation KeyboardControllerMainSettings
 - (PSSpecifier *)createGroupSpecifierNamed:(NSString *)name footer:(NSString *)footer key:(NSString *)key {
@@ -112,7 +115,7 @@ NSMutableDictionary *tweakSettings;
 		_specifiers = [NSMutableArray new];
 
 		PSSpecifier *enableTweak = [self createSwitchSpecifierNamed:@"Enable Tweak" key:@"enableTweak" default:@"1"];
-		[enableTweak setProperty:[UIImage imageWithContentsOfFile:@"/Library/PreferenceBundles/KeyboardControllerSettings.bundle/icons/KeyboardController.png"] forKey:@"iconImage"];
+		[enableTweak setProperty:KeyboardControllerIcon(@"KeyboardController") forKey:@"iconImage"];
 		[enableTweak setProperty:@"55" forKey:@"height"];
 		[_specifiers addObject:enableTweak];
 
@@ -255,31 +258,31 @@ NSMutableDictionary *tweakSettings;
 
 	PSSpecifier *sourceCode = [self createButtonSpecifierNamed:@"Source Code"];
 	sourceCode->action = @selector(sourceCode);
-	[sourceCode setProperty:[UIImage imageWithContentsOfFile:@"/Library/PreferenceBundles/KeyboardControllerSettings.bundle/icons/code.png"] forKey:@"iconImage"];
+	[sourceCode setProperty:KeyboardControllerIcon(@"code") forKey:@"iconImage"];
 	[sourceCode setProperty:@YES forKey:@"hasIcon"];
 	[_standardSpecifiers addObject:sourceCode];
 
 	PSSpecifier *knownIssues = [self createButtonSpecifierNamed:@"Known Issues"];
 	knownIssues->action = @selector(knownIssues);
-	[knownIssues setProperty:[UIImage imageWithContentsOfFile:@"/Library/PreferenceBundles/KeyboardControllerSettings.bundle/icons/bug.png"] forKey:@"iconImage"];
+	[knownIssues setProperty:KeyboardControllerIcon(@"bug") forKey:@"iconImage"];
 	[knownIssues setProperty:@YES forKey:@"hasIcon"];
 	[_standardSpecifiers addObject:knownIssues];
 
 	PSSpecifier *linkBigboss = [self createButtonSpecifierNamed:@"Tomasz Poliszuk @ BigBoss"];
 	linkBigboss->action = @selector(TomaszPoliszukAtBigBoss);
-	[linkBigboss setProperty:[UIImage imageWithContentsOfFile:@"/Library/PreferenceBundles/KeyboardControllerSettings.bundle/icons/packages.png"] forKey:@"iconImage"];
+	[linkBigboss setProperty:KeyboardControllerIcon(@"packages") forKey:@"iconImage"];
 	[linkBigboss setProperty:@YES forKey:@"hasIcon"];
 	[_standardSpecifiers addObject:linkBigboss];
 
 	PSSpecifier *linkGithub = [self createButtonSpecifierNamed:@"Tomasz Poliszuk @ Github"];
 	linkGithub->action = @selector(TomaszPoliszukAtGithub);
-	[linkGithub setProperty:[UIImage imageWithContentsOfFile:@"/Library/PreferenceBundles/KeyboardControllerSettings.bundle/icons/github.png"] forKey:@"iconImage"];
+	[linkGithub setProperty:KeyboardControllerIcon(@"github") forKey:@"iconImage"];
 	[linkGithub setProperty:@YES forKey:@"hasIcon"];
 	[_standardSpecifiers addObject:linkGithub];
 
 	PSSpecifier *linkCySxLGithub = [self createButtonSpecifierNamed:@"CySxL @ Github (iOS 16 maintainer)"];
 	linkCySxLGithub->action = @selector(CySxLAtGithub);
-	[linkCySxLGithub setProperty:[UIImage imageWithContentsOfFile:@"/Library/PreferenceBundles/KeyboardControllerSettings.bundle/icons/github.png"] forKey:@"iconImage"];
+	[linkCySxLGithub setProperty:KeyboardControllerIcon(@"github") forKey:@"iconImage"];
 	[linkCySxLGithub setProperty:@YES forKey:@"hasIcon"];
 	[_standardSpecifiers addObject:linkCySxLGithub];
 }
