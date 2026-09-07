@@ -19,8 +19,6 @@
 
 extern "C" NSString *PreferencesFilePath(void);
 
-NSMutableDictionary *tweakSettings;
-
 static bool enableTweak;
 
 static int uiStyle;
@@ -81,6 +79,7 @@ static int oneHandedGestureReturn;
 static int useBlueThemingForKey;
 
 static void SettingsChanged() {
+	NSMutableDictionary *tweakSettings = nil;
 	CFArrayRef keyList = CFPreferencesCopyKeyList(CFSTR(kPackageName), kCFPreferencesCurrentUser, kCFPreferencesAnyHost);
 	if(keyList) {
 		tweakSettings = (NSMutableDictionary *)CFBridgingRelease(
@@ -92,8 +91,6 @@ static void SettingsChanged() {
 			)
 		);
 		CFRelease(keyList);
-	} else {
-		tweakSettings = nil;
 	}
 	if ( !tweakSettings ) {
 		tweakSettings = [NSMutableDictionary dictionaryWithContentsOfFile:PreferencesFilePath()];
