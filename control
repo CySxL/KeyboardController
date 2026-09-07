@@ -12,4 +12,4 @@ Sponsor: thebigboss.org <http://thebigboss.org>
 Section: Tweaks
 dev: tomaszpoliszuk
 Tag: purpose::extension
-Icon: file:///Library/PreferenceBundles/KeyboardControllerSettings.bundle/icons/KeyboardController@3x.png
+Icon: https://raw.githubusercontent.com/CySxL/KeyboardController/master/KeyboardControllerSettings/Resources/icons/KeyboardController@3x.png
