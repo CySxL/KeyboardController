@@ -546,9 +546,7 @@ static int classifyKeyByGeometry(CGPoint point, CGRect bounds) {
 %hook _UIKeyboardTextSelectionInteraction
 - (bool)forceTouchGestureRecognizerShouldBegin:(id)arg1 {
 	int origValue = %orig;
-	if ( enableTweak && trackpadMode == 404 ) {
-		return NO;
-	} else if ( enableTweak && trackpadMode == 505 ) {
+	if ( enableTweak && ( trackpadMode == 404 || trackpadMode == 505 ) ) {
 		return NO;
 	} else if ( enableTweak && trackpadMode == 1 ) {
 		return YES;
