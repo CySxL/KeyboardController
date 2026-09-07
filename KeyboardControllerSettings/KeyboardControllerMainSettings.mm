@@ -148,7 +148,9 @@ static UIImage *KeyboardControllerIcon(NSString *name) {
 
 			NSString *trackpadModeFooter = @"Default: only the spacebar activates the trackpad.\nDisabled: the trackpad is off on the whole keyboard.\nEnabled: the whole keyboard activates the trackpad.";
 
-			if ( ![[UIDevice currentDevice] _supportsForceTouch] ) {
+			BOOL supportsForceTouch = [[UIDevice currentDevice] respondsToSelector:@selector(_supportsForceTouch)]
+				&& [[UIDevice currentDevice] _supportsForceTouch];
+			if ( !supportsForceTouch ) {
 				trackpadModeTitles = @[ @"Default", @"Disabled", @"Enabled" ];
 				trackpadModeValues = @[ @"999", @"404", @"505" ];
 			} else {
