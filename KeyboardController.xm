@@ -569,9 +569,11 @@ static int classifyKeyByGeometry(CGPoint point, CGRect bounds) {
 %end
 
 %ctor {
-	if ( [ [ [ [NSProcessInfo processInfo] arguments] objectAtIndex:0] containsString:@"SpringBoard.app" ]
+	NSArray *arguments = [[NSProcessInfo processInfo] arguments];
+	NSString *executablePath = arguments.count > 0 ? arguments[0] : nil;
+	if ( [executablePath containsString:@"SpringBoard.app"]
 	||
-	[ [ [ [NSProcessInfo processInfo] arguments] objectAtIndex:0] containsString:@"/Application" ] ) {
+	[executablePath containsString:@"/Application"] ) {
 		ReloadSettings();
 		CFNotificationCenterAddObserver(
 			CFNotificationCenterGetDarwinNotifyCenter(),
