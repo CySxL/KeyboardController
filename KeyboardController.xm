@@ -212,7 +212,7 @@ static int classifyKeyByGeometry(CGPoint point, CGRect bounds) {
 @implementation KeyboardControllerHandBiasGesture
 - (BOOL)gestureRecognizer:(UIGestureRecognizer *)gestureRecognizer shouldReceiveTouch:(UITouch *)touch {
 	UIKeyboardLayoutStar *layout = self.layout;
-	if ( !layout ) {
+	if ( !enableTweak || !layout ) {
 		self.startKind = keyNone;
 		return NO;
 	}
@@ -360,6 +360,9 @@ static int classifyKeyByGeometry(CGPoint point, CGRect bounds) {
 }
 %new
 - (void)handleHandBiasPan:(UIPanGestureRecognizer *)pan {
+	if ( !enableTweak ) {
+		return;
+	}
 	if ( pan.state != UIGestureRecognizerStateEnded ) {
 		return;
 	}
