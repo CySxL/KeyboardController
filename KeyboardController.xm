@@ -182,15 +182,18 @@ static int classifyKey(id key) {
 		return keyNone;
 	}
 	NSString *rep = [key respondsToSelector:@selector(representedString)] ? [key representedString] : nil;
-	NSString *disp = [key respondsToSelector:@selector(displayString)] ? [key displayString] : nil;
-	if ( [rep isEqualToString:@"More"] || [disp isEqualToString:@"123"] || [disp isEqualToString:@"#+="] || [disp isEqualToString:@"ABC"] ) {
-		return keyMore;
-	}
 	if ( [rep isEqualToString:@"Delete"] ) {
 		return keyDelete;
 	}
 	if ( [rep isEqualToString:@"\n"] || [rep isEqualToString:@"\r"] || [rep isEqualToString:@"Return"] ) {
 		return keyReturn;
+	}
+	if ( [rep isEqualToString:@"More"] ) {
+		return keyMore;
+	}
+	NSString *disp = [key respondsToSelector:@selector(displayString)] ? [key displayString] : nil;
+	if ( [disp isEqualToString:@"123"] || [disp isEqualToString:@"#+="] || [disp isEqualToString:@"ABC"] ) {
+		return keyMore;
 	}
 	return keyNone;
 }
