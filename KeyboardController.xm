@@ -82,6 +82,8 @@ static int useBlueThemingForKey;
 // ivar raw, so mapping during one applies the map a second time on the next read.
 static __thread int traitCopyDepth;
 
+static BOOL canAskForAncestorController;
+
 static NSDictionary *LoadSettings() {
 	NSDictionary *tweakSettings = nil;
 	CFArrayRef keyList = CFPreferencesCopyKeyList(CFSTR(kPackageName), kCFPreferencesCurrentUser, kCFPreferencesAnyHost);
@@ -314,7 +316,7 @@ static int classifyKeyByGeometry(CGPoint point, CGRect bounds) {
 %hook UIScrollView
 - (long long)keyboardDismissMode {
 	long long origValue = %orig;
-	if ( enableTweak && keyboardDismissMode != 999 ) {
+	if ( enableTweak && keyboardDismissMode != 999 && canAskForAncestorController ) {
 		id ancestor = [self _viewControllerForAncestor];
 		if (
 			![ancestor isKindOfClass:%c(UICompatibilityInputViewController)]
@@ -574,6 +576,7 @@ static int classifyKeyByGeometry(CGPoint point, CGRect bounds) {
 	if ( [executablePath containsString:@"SpringBoard.app"]
 	||
 	[executablePath containsString:@"/Application"] ) {
+		canAskForAncestorController = [UIView instancesRespondToSelector:@selector(_viewControllerForAncestor)];
 		ReloadSettings();
 		CFNotificationCenterAddObserver(
 			CFNotificationCenterGetDarwinNotifyCenter(),
