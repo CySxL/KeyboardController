@@ -222,7 +222,7 @@ static UIImage *KeyboardControllerIcon(NSString *name) {
 
 		PSTextFieldSpecifier *testKeyboard = [self createEditTextSpecifierNamed:@"" key:@"testKeyboard" default:nil];
 		[testKeyboard setPlaceholder:@"Test keyboard here"];
-		static int testKeyboardSelectedValue = [[self readPreferenceValue:testKeyboardSelected] integerValue];
+		int testKeyboardSelectedValue = [[self readPreferenceValue:testKeyboardSelected] integerValue];
 		[testKeyboard setKeyboardType:testKeyboardSelectedValue autoCaps:NO autoCorrection:NO];
 		[_specifiers addObject:testKeyboard];
 
