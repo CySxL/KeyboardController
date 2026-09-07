@@ -164,7 +164,7 @@
 		[_specifiers addObject:useBlueThemingForKeyGroup];
 
 		PSSpecifier *useBlueThemingForKey = [self createSegmentSpecifierNamed:@"useBlueThemingForKey" key:@"useBlueThemingForKey" default:@"999"];
-		[useBlueThemingForKey setValues:@[ @"999", @"2", @"1" ] titles:@[ @"Default", @"Disable", @"Enable" ]];
+		[useBlueThemingForKey setValues:@[ @"999", @"0", @"1" ] titles:@[ @"Default", @"Disable", @"Enable" ]];
 		[_specifiers addObject:useBlueThemingForKey];
 
 		PSSpecifier *testKeyboardGroup = [PSSpecifier groupSpecifierWithName:@"Testing area"];
