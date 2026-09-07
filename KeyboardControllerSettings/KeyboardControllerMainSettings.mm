@@ -304,6 +304,13 @@ static UIImage *KeyboardControllerIcon(NSString *name) {
 			[tweakSettings removeObjectForKey:key];
 		}
 		[tweakSettings synchronize];
+		CFNotificationCenterPostNotification(
+			CFNotificationCenterGetDarwinNotifyCenter(),
+			(__bridge CFStringRef)kSettingsChanged,
+			NULL,
+			NULL,
+			YES
+		);
 		[self reloadSpecifiers];
 	}];
 	UIAlertAction *cancel = [UIAlertAction actionWithTitle:@"Cancel" style:UIAlertActionStyleCancel handler:nil];
