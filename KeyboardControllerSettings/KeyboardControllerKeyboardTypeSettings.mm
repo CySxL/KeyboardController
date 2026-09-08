@@ -17,7 +17,32 @@
 
 #include "../headers.h"
 
-@implementation KeyboardControllerKeyboardTypeSettings
+@implementation KeyboardControllerKeyboardTypeSettings {
+	NSMutableDictionary *_transientValues;
+}
+- (instancetype)init {
+	self = [super init];
+	if ( self ) {
+		_transientValues = [NSMutableDictionary new];
+	}
+	return self;
+}
+- (id)readPreferenceValue:(PSSpecifier *)specifier {
+	if ( [specifier propertyForKey:kTransientField] ) {
+		return _transientValues[[specifier propertyForKey:@"key"]];
+	}
+	return [super readPreferenceValue:specifier];
+}
+- (void)setPreferenceValue:(id)value specifier:(PSSpecifier *)specifier {
+	if ( [specifier propertyForKey:kTransientField] ) {
+		NSString *key = [specifier propertyForKey:@"key"];
+		if ( key ) {
+			_transientValues[key] = value ?: @"";
+		}
+		return;
+	}
+	[super setPreferenceValue:value specifier:specifier];
+}
 - (PSSpecifier *)createGroupSpecifierNamed:(NSString *)name footer:(NSString *)footer key:(NSString *)key {
 	PSSpecifier *specifier = [PSSpecifier groupSpecifierWithHeader:name footer:footer];
 	[specifier setProperty:name forKey:@"label"];
@@ -55,8 +80,7 @@
 	[specifier setProperty:key forKey:@"key"];
 	[specifier setProperty:key forKey:@"id"];
 	[specifier setProperty:defaultValue forKey:@"default"];
-	[specifier setProperty:@kPackageName forKey:@"defaults"];
-	[specifier setProperty:kSettingsChanged forKey:@"PostNotification"];
+	[specifier setProperty:@YES forKey:kTransientField];
 	return specifier;
 }
 - (NSArray *)specifiers {

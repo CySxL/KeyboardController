@@ -21,6 +21,8 @@
 
 #define kPackageName "com.tomaszpoliszuk.keyboardcontroller"
 #define kSettingsChanged @"com.tomaszpoliszuk.keyboardcontroller.settingschanged"
+// Marks a settings field that holds its value in memory and never writes it.
+#define kTransientField @"KeyboardControllerTransientField"
 
 @interface UIView (KeyboardController)
 -(id)_viewControllerForAncestor;

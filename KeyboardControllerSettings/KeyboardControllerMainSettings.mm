@@ -22,7 +22,47 @@ static UIImage *KeyboardControllerIcon(NSString *name) {
 	return [UIImage imageWithContentsOfFile:[bundle pathForResource:name ofType:@"png" inDirectory:@"icons"]];
 }
 
-@implementation KeyboardControllerMainSettings
+// The test fields used to persist whatever was typed into them, including the
+// number pad field whose footer describes PIN entry. Nothing ever read them
+// back. They no longer write, so clear what earlier versions left behind.
+static void ClearStoredTestFields(void) {
+	NSArray *keys = @[
+		@"testKeyboard",
+		@"defaultKeyboardTry",
+		@"asciiCapableKeyboardTry",
+		@"numbersAndPunctuationKeyboardTry",
+		@"urlKeyboardTry",
+		@"numberPadKeyboardTry",
+		@"phonePadKeyboardTry",
+		@"namePhonePadKeyboardTry",
+		@"emailAddressKeyboardTry",
+		@"decimalPadKeyboardTry",
+		@"twitterKeyboardTry",
+		@"webSearchKeyboardTry",
+		@"asciiCapableNumberPadKeyboardTry",
+	];
+	NSUserDefaults *tweakSettings = [[NSUserDefaults alloc] initWithSuiteName:@kPackageName];
+	BOOL removedAny = NO;
+	for ( NSString *key in keys ) {
+		if ( [tweakSettings objectForKey:key] ) {
+			[tweakSettings removeObjectForKey:key];
+			removedAny = YES;
+		}
+	}
+	if ( removedAny ) {
+		[tweakSettings synchronize];
+	}
+}
+
+@implementation KeyboardControllerMainSettings {
+	NSMutableDictionary *_transientValues;
+}
+- (id)readPreferenceValue:(PSSpecifier *)specifier {
+	if ( [specifier propertyForKey:kTransientField] ) {
+		return _transientValues[[specifier propertyForKey:@"key"]];
+	}
+	return [super readPreferenceValue:specifier];
+}
 - (PSSpecifier *)createGroupSpecifierNamed:(NSString *)name footer:(NSString *)footer key:(NSString *)key {
 	PSSpecifier *specifier = [PSSpecifier groupSpecifierWithHeader:name footer:footer];
 	[specifier setProperty:name forKey:@"label"];
@@ -95,8 +135,7 @@ static UIImage *KeyboardControllerIcon(NSString *name) {
 	[specifier setProperty:key forKey:@"key"];
 	[specifier setProperty:key forKey:@"id"];
 	[specifier setProperty:defaultValue forKey:@"default"];
-	[specifier setProperty:@kPackageName forKey:@"defaults"];
-	[specifier setProperty:kSettingsChanged forKey:@"PostNotification"];
+	[specifier setProperty:@YES forKey:kTransientField];
 	return specifier;
 }
 - (PSSpecifier *)createButtonSpecifierNamed:(NSString *)name {
@@ -237,6 +276,8 @@ static UIImage *KeyboardControllerIcon(NSString *name) {
 - (instancetype)init {
 	self = [super init];
 	if (self) {
+		_transientValues = [NSMutableDictionary new];
+		ClearStoredTestFields();
 		[self createStandardSpecifiers];
 	}
 	return self;
@@ -289,6 +330,13 @@ static UIImage *KeyboardControllerIcon(NSString *name) {
 	[_standardSpecifiers addObject:linkCySxLGithub];
 }
 - (void)setPreferenceValue:(id)value specifier:(PSSpecifier*)specifier {
+	if ( [specifier propertyForKey:kTransientField] ) {
+		NSString *key = [specifier propertyForKey:@"key"];
+		if ( key ) {
+			_transientValues[key] = value ?: @"";
+		}
+		return;
+	}
 	[super setPreferenceValue:value specifier:specifier];
 
 	PSSpecifier *testKeyboardSelected = [self specifierForID:@"testKeyboardSelected"];
