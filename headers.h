@@ -17,7 +17,6 @@
 
 #import <Preferences/PSListController.h>
 #import <Preferences/PSSpecifier.h>
-//	#import <AudioToolbox/AudioToolbox.h>
 
 #define kPackageName "com.tomaszpoliszuk.keyboardcontroller"
 #define kSettingsChanged @"com.tomaszpoliszuk.keyboardcontroller.settingschanged"
@@ -29,10 +28,8 @@
 @end
 
 @interface UIDevice (KeyboardController)
-@property (getter=_feedbackSupportLevel, nonatomic, readonly) long long feedbackSupportLevel;
 + (id)currentDevice;
 - (bool)_supportsForceTouch;
-- (id)_tapticEngine;
 @end
 
 @interface NSMutableArray (KeyboardController)

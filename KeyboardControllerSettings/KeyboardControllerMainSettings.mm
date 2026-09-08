@@ -222,14 +222,12 @@ static void ClearStoredTestFields(void) {
 			[_specifiers addObject:shouldShowInternationalKey];
 		}
 
-//		if (@available(iOS 8, *)) {
 			PSSpecifier *returnKeyStylingGroup = [self createGroupSpecifierNamed:@"Return Key Styling" footer:nil key:@"returnKeyStylingGroup"];
 			[_specifiers addObject:returnKeyStylingGroup];
 
 			PSSpecifier *returnKeyStyling = [self createSegmentSpecifierNamed:@"returnKeyStyling" key:@"returnKeyStyling" default:@"999"];
 			[returnKeyStyling setValues:@[ @"999", @"0", @"1" ] titles:@[ @"Default", @"Disable", @"Enable" ]];
 			[_specifiers addObject:returnKeyStyling];
-//		}
 
 		PSSpecifier *selectingSkinToneForEmojiGroup = [self createGroupSpecifierNamed:@"Selecting skin tone for emoji" footer:nil key:@"selectingSkinToneForEmojiGroup"];
 		[_specifiers addObject:selectingSkinToneForEmojiGroup];

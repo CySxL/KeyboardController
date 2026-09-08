@@ -90,18 +90,6 @@
 		NSArray *titles = @[ @"Default", @"ASCII Capable", @"Numbers and Punctuation", @"URL", @"Number Pad", @"Phone Pad", @"Name Phone Pad", @"Email Address", @"Decimal Pad", @"Twitter", @"Web Search" ];
 		NSArray *values = @[ @"0", @"1", @"2", @"3", @"4", @"5", @"6", @"7", @"8", @"9", @"10" ];
 
-//		if (@available(iOS 4.1, *)) {
-//			titles = @[ @"Default", @"ASCII Capable", @"Numbers and Punctuation", @"URL", @"Number Pad", @"Phone Pad", @"Name Phone Pad", @"Email Address" ];
-//			values = @[ @"0", @"1", @"2", @"3", @"4", @"5", @"6", @"7" ];
-//		}
-//		if (@available(iOS 5, *)) {
-//			titles = @[ @"Default", @"ASCII Capable", @"Numbers and Punctuation", @"URL", @"Number Pad", @"Phone Pad", @"Name Phone Pad", @"Email Address", @"Decimal Pad" ];
-//			values = @[ @"0", @"1", @"2", @"3", @"4", @"5", @"6", @"7", @"8" ];
-//		}
-//		if (@available(iOS 7, *)) {
-//			titles = @[ @"Default", @"ASCII Capable", @"Numbers and Punctuation", @"URL", @"Number Pad", @"Phone Pad", @"Name Phone Pad", @"Email Address", @"Decimal Pad", @"Twitter" ];
-//			values = @[ @"0", @"1", @"2", @"3", @"4", @"5", @"6", @"7", @"8", @"9" ];
-//		}
 
 		if (@available(iOS 10, *)) {
 			titles = @[ @"Default", @"ASCII Capable", @"Numbers and Punctuation", @"URL", @"Number Pad", @"Phone Pad", @"Name Phone Pad", @"Email Address", @"Decimal Pad", @"Twitter", @"Web Search", @"ASCII Capable Number Pad" ];
@@ -204,7 +192,6 @@
 		[emailAddressKeyboardTry setPlaceholder:@"Test Email Address keyboard"];
 		[_specifiers addObject:emailAddressKeyboardTry];
 
-//		if (@available(iOS 4.1, *)) {
 			PSSpecifier *decimalPadKeyboardGroup = [self createGroupSpecifierNamed:@"" footer:@"Specifies a keyboard with numbers and a decimal point." key:@"decimalPadKeyboardGroup"];
 			[_specifiers addObject:decimalPadKeyboardGroup];
 
@@ -216,9 +203,7 @@
 			[decimalPadKeyboardTry setKeyboardType:8 autoCaps:NO autoCorrection:NO];
 			[decimalPadKeyboardTry setPlaceholder:@"Test Decimal Pad keyboard"];
 			[_specifiers addObject:decimalPadKeyboardTry];
-//		}
 
-//		if (@available(iOS 5, *)) {
 			PSSpecifier *twitterKeyboardGroup = [self createGroupSpecifierNamed:@"" footer:@"Specifies a keyboard optimized for Twitter text entry, with easy access to the at (“@”) and hash (“#”) characters." key:@"twitterKeyboardGroup"];
 			[_specifiers addObject:twitterKeyboardGroup];
 
@@ -230,9 +215,7 @@
 			[twitterKeyboardTry setKeyboardType:9 autoCaps:NO autoCorrection:NO];
 			[twitterKeyboardTry setPlaceholder:@"Test Twitter keyboard"];
 			[_specifiers addObject:twitterKeyboardTry];
-//		}
 
-//		if (@available(iOS 7, *)) {
 			PSSpecifier *webSearchKeyboardGroup = [self createGroupSpecifierNamed:@"" footer:@"Specifies a keyboard optimized for web search terms and URL entry. This keyboard type prominently features the space and period (“.”) characters." key:@"webSearchKeyboardGroup"];
 			[_specifiers addObject:webSearchKeyboardGroup];
 
@@ -244,7 +227,6 @@
 			[webSearchKeyboardTry setKeyboardType:10 autoCaps:NO autoCorrection:NO];
 			[webSearchKeyboardTry setPlaceholder:@"Test Web Search keyboard"];
 			[_specifiers addObject:webSearchKeyboardTry];
-//		}
 
 		if (@available(iOS 10, *)) {
 			PSSpecifier *asciiCapableNumberPadKeyboardGroup = [self createGroupSpecifierNamed:@"" footer:@"Specifies a number pad that outputs only ASCII digits." key:@"asciiCapableNumberPadKeyboardGroup"];
