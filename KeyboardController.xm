@@ -104,35 +104,53 @@ static NSDictionary *LoadSettings() {
 	return tweakSettings;
 }
 
-static void ApplySettings(NSDictionary *tweakSettings) {
-	enableTweak = [([tweakSettings objectForKey:@"enableTweak"] ?: @(YES)) boolValue];
+// A plist value can be any class. NSNumber and NSString answer integerValue and
+// boolValue, anything else throws, and this loads into every UIKit process.
+static long long IntegerSetting(NSDictionary *settings, NSString *key, long long fallback) {
+	id value = [settings objectForKey:key];
+	if ( [value isKindOfClass:[NSNumber class]] || [value isKindOfClass:[NSString class]] ) {
+		return [value longLongValue];
+	}
+	return fallback;
+}
 
-	uiStyle = [([tweakSettings objectForKey:@"uiStyle"] ?: @(999)) integerValue];
+static bool BoolSetting(NSDictionary *settings, NSString *key, bool fallback) {
+	id value = [settings objectForKey:key];
+	if ( [value isKindOfClass:[NSNumber class]] || [value isKindOfClass:[NSString class]] ) {
+		return [value boolValue];
+	}
+	return fallback;
+}
+
+static void ApplySettings(NSDictionary *tweakSettings) {
+	enableTweak = BoolSetting(tweakSettings, @"enableTweak", YES);
+
+	uiStyle = IntegerSetting(tweakSettings, @"uiStyle", 999);
 
 	for ( int i = 0; i < kKeyboardTypeCount; i++ ) {
-		keyboardTypeMap[i] = [([tweakSettings objectForKey:keyboardTypeKeys[i]] ?: @(i)) integerValue];
-		returnKeyTypeMap[i] = [([tweakSettings objectForKey:returnKeyTypeKeys[i]] ?: @(i)) integerValue];
+		keyboardTypeMap[i] = IntegerSetting(tweakSettings, keyboardTypeKeys[i], i);
+		returnKeyTypeMap[i] = IntegerSetting(tweakSettings, returnKeyTypeKeys[i], i);
 	}
 
-	keyboardDismissMode = [([tweakSettings objectForKey:@"keyboardDismissMode"] ?: @(999)) integerValue];
+	keyboardDismissMode = IntegerSetting(tweakSettings, @"keyboardDismissMode", 999);
 
-	trackpadMode = [([tweakSettings objectForKey:@"trackpadMode"] ?: @(999)) integerValue];
+	trackpadMode = IntegerSetting(tweakSettings, @"trackpadMode", 999);
 
-	returnKeyStyling = [([tweakSettings objectForKey:@"returnKeyStyling"] ?: @(999)) integerValue];
+	returnKeyStyling = IntegerSetting(tweakSettings, @"returnKeyStyling", 999);
 
-	dictationButton = [([tweakSettings objectForKey:@"dictationButton"] ?: @(999)) integerValue];
+	dictationButton = IntegerSetting(tweakSettings, @"dictationButton", 999);
 
-	shouldShowInternationalKey = [([tweakSettings objectForKey:@"shouldShowInternationalKey"] ?: @(999)) integerValue];
+	shouldShowInternationalKey = IntegerSetting(tweakSettings, @"shouldShowInternationalKey", 999);
 
-	selectingSkinToneForEmoji = [([tweakSettings objectForKey:@"selectingSkinToneForEmoji"] ?: @(999)) integerValue];
+	selectingSkinToneForEmoji = IntegerSetting(tweakSettings, @"selectingSkinToneForEmoji", 999);
 
-	oneHandedKeyboard = [([tweakSettings objectForKey:@"oneHandedKeyboard"] ?: @(999)) integerValue];
+	oneHandedKeyboard = IntegerSetting(tweakSettings, @"oneHandedKeyboard", 999);
 
-	oneHandedGestureLeft = [([tweakSettings objectForKey:@"oneHandedGestureLeft"] ?: @(0)) boolValue];
-	oneHandedGestureRight = [([tweakSettings objectForKey:@"oneHandedGestureRight"] ?: @(0)) boolValue];
-	oneHandedGestureReturn = [([tweakSettings objectForKey:@"oneHandedGestureReturn"] ?: @(0)) boolValue];
+	oneHandedGestureLeft = BoolSetting(tweakSettings, @"oneHandedGestureLeft", false);
+	oneHandedGestureRight = BoolSetting(tweakSettings, @"oneHandedGestureRight", false);
+	oneHandedGestureReturn = BoolSetting(tweakSettings, @"oneHandedGestureReturn", false);
 
-	useBlueThemingForKey = [([tweakSettings objectForKey:@"useBlueThemingForKey"] ?: @(999)) integerValue];
+	useBlueThemingForKey = IntegerSetting(tweakSettings, @"useBlueThemingForKey", 999);
 }
 
 // Two synchronous trips to cfprefsd, in every UIKit process, for every change a
