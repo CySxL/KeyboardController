@@ -27,9 +27,19 @@
 #error theos defined no package scheme
 #endif
 
+// The icons are loose files in a subdirectory, so imageNamed: does not find
+// them and imageWithContentsOfFile: does no scale search. Pick the suffix from
+// the screen and let UIImage read the scale back off the filename.
 static UIImage *KeyboardControllerIcon(NSString *name) {
 	NSBundle *bundle = [NSBundle bundleForClass:[KeyboardControllerMainSettings class]];
-	return [UIImage imageWithContentsOfFile:[bundle pathForResource:name ofType:@"png" inDirectory:@"icons"]];
+	for ( NSInteger scale = (NSInteger)[UIScreen mainScreen].scale; scale >= 1; scale-- ) {
+		NSString *suffix = scale > 1 ? [NSString stringWithFormat:@"@%ldx", (long)scale] : @"";
+		NSString *path = [bundle pathForResource:[name stringByAppendingString:suffix] ofType:@"png" inDirectory:@"icons"];
+		if ( path ) {
+			return [UIImage imageWithContentsOfFile:path];
+		}
+	}
+	return nil;
 }
 
 // The test fields used to persist whatever was typed into them, including the
