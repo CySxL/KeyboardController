@@ -17,6 +17,7 @@
 
 #import <Preferences/PSListController.h>
 #import <Preferences/PSSpecifier.h>
+#import <Preferences/PSTableCell.h>
 
 #define kPackageName "com.tomaszpoliszuk.keyboardcontroller"
 #define kSettingsChanged @"com.tomaszpoliszuk.keyboardcontroller.settingschanged"
@@ -59,6 +60,9 @@
 
 
 @interface PSListController (KeyboardController)
+@end
+
+@interface KeyboardControllerHeaderCell : PSTableCell
 @end
 
 @interface KeyboardControllerMainSettings : PSListController

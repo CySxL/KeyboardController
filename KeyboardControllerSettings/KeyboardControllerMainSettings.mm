@@ -27,6 +27,8 @@
 #error theos defined no package scheme
 #endif
 
+static const CGFloat kHeaderIconSide = 80.0;
+
 // The icons are loose files in a subdirectory, so imageNamed: does not find
 // them and imageWithContentsOfFile: does no scale search. Pick the suffix from
 // the screen and let UIImage read the scale back off the filename.
@@ -41,6 +43,57 @@ static UIImage *KeyboardControllerIcon(NSString *name) {
 	}
 	return nil;
 }
+
+@implementation KeyboardControllerHeaderCell
+
+- (instancetype)initWithStyle:(UITableViewCellStyle)style reuseIdentifier:(NSString *)identifier specifier:(PSSpecifier *)specifier {
+	self = [super initWithStyle:style reuseIdentifier:identifier specifier:specifier];
+	if ( !self ) {
+		return nil;
+	}
+
+	UIImageView *icon = [[UIImageView alloc] initWithImage:KeyboardControllerIcon(@"KeyboardController")];
+	icon.translatesAutoresizingMaskIntoConstraints = NO;
+	icon.clipsToBounds = YES;
+	icon.layer.cornerCurve = kCACornerCurveContinuous;
+	icon.layer.cornerRadius = kHeaderIconSide * 0.225;
+	[self.contentView addSubview:icon];
+
+	UILabel *version = [[UILabel alloc] init];
+	version.text = @"Version " PACKAGE_VERSION "\n" PACKAGE_SCHEME;
+	version.numberOfLines = 2;
+	version.font = [UIFont systemFontOfSize:14.0];
+	version.textColor = [UIColor systemGrayColor];
+	version.textAlignment = NSTextAlignmentCenter;
+	version.translatesAutoresizingMaskIntoConstraints = NO;
+	[self.contentView addSubview:version];
+
+	[NSLayoutConstraint activateConstraints:@[
+		[icon.widthAnchor constraintEqualToConstant:kHeaderIconSide],
+		[icon.heightAnchor constraintEqualToConstant:kHeaderIconSide],
+		[icon.centerXAnchor constraintEqualToAnchor:self.contentView.centerXAnchor],
+		[icon.topAnchor constraintEqualToAnchor:self.contentView.topAnchor constant:10.0],
+		[version.topAnchor constraintEqualToAnchor:icon.bottomAnchor constant:8.0],
+		[version.centerXAnchor constraintEqualToAnchor:self.contentView.centerXAnchor],
+		[version.widthAnchor constraintEqualToAnchor:self.contentView.widthAnchor]
+	]];
+
+	return self;
+}
+
+- (void)setSeparatorStyle:(UITableViewCellSeparatorStyle)style {
+	[super setSeparatorStyle:UITableViewCellSeparatorStyleNone];
+}
+
+- (void)setBackgroundColor:(UIColor *)color {
+	[super setBackgroundColor:[UIColor clearColor]];
+}
+
+- (UITableViewCellSelectionStyle)selectionStyle {
+	return UITableViewCellSelectionStyleNone;
+}
+
+@end
 
 // The test fields used to persist whatever was typed into them, including the
 // number pad field whose footer describes PIN entry. Nothing ever read them
@@ -172,6 +225,12 @@ static void ClearStoredTestFields(void) {
 - (NSArray *)specifiers {
 	if (!_specifiers) {
 		_specifiers = [NSMutableArray new];
+
+		PSSpecifier *header = [PSSpecifier preferenceSpecifierNamed:@"" target:self set:NULL get:NULL detail:nil cell:PSStaticTextCell edit:nil];
+		[header setProperty:[KeyboardControllerHeaderCell class] forKey:@"cellClass"];
+		[header setProperty:@142 forKey:@"height"];
+		[_specifiers addObject:header];
+		[_specifiers addObject:[PSSpecifier emptyGroupSpecifier]];
 
 		PSSpecifier *enableTweak = [self createSwitchSpecifierNamed:@"Enable Tweak" key:@"enableTweak" default:@"1"];
 		[enableTweak setProperty:KeyboardControllerIcon(@"KeyboardController") forKey:@"iconImage"];
@@ -314,7 +373,7 @@ static void ClearStoredTestFields(void) {
 	[resetSettings setProperty:@YES forKey:@"hasIcon"];
 	[_standardSpecifiers addObject:resetSettings];
 
-	PSSpecifier* relatedLinks = [PSSpecifier groupSpecifierWithHeader:@"Related Links" footer:@"Version " PACKAGE_VERSION "\n" PACKAGE_SCHEME];
+	PSSpecifier* relatedLinks = [PSSpecifier groupSpecifierWithName:@"Related Links"];
 	[_standardSpecifiers addObject:relatedLinks];
 
 	PSSpecifier *sourceCode = [self createButtonSpecifierNamed:@"Source Code"];
