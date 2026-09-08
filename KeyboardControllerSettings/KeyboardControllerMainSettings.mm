@@ -17,6 +17,16 @@
 
 #include "../headers.h"
 
+#if defined(THEOS_PACKAGE_SCHEME_ROOTHIDE)
+#define PACKAGE_SCHEME "roothide"
+#elif defined(THEOS_PACKAGE_SCHEME_ROOTLESS)
+#define PACKAGE_SCHEME "rootless"
+#elif defined(THEOS_PACKAGE_SCHEME_ROOTFUL)
+#define PACKAGE_SCHEME "rootful"
+#else
+#error theos defined no package scheme
+#endif
+
 static UIImage *KeyboardControllerIcon(NSString *name) {
 	NSBundle *bundle = [NSBundle bundleForClass:[KeyboardControllerMainSettings class]];
 	return [UIImage imageWithContentsOfFile:[bundle pathForResource:name ofType:@"png" inDirectory:@"icons"]];
@@ -294,7 +304,7 @@ static void ClearStoredTestFields(void) {
 	[resetSettings setProperty:@YES forKey:@"hasIcon"];
 	[_standardSpecifiers addObject:resetSettings];
 
-	PSSpecifier* relatedLinks = [PSSpecifier groupSpecifierWithName:@"Related Links"];
+	PSSpecifier* relatedLinks = [PSSpecifier groupSpecifierWithHeader:@"Related Links" footer:@"Version " PACKAGE_VERSION "\n" PACKAGE_SCHEME];
 	[_standardSpecifiers addObject:relatedLinks];
 
 	PSSpecifier *sourceCode = [self createButtonSpecifierNamed:@"Source Code"];
