@@ -1,14 +1,12 @@
 INSTALL_TARGET_PROCESSES = SpringBoard
 
-ifeq ($(THEOS_PACKAGE_SCHEME),rootless)
-export ARCHS = arm64 arm64e
-export TARGET = iphone:clang:14.5:15.0
-else ifeq ($(THEOS_PACKAGE_SCHEME),roothide)
+# Rootful is not built here. The thread-local in the keyboard type hook is
+# rejected for armv7 and armv7s, and rootful users are served by upstream.
+ifneq ($(filter rootless roothide,$(THEOS_PACKAGE_SCHEME)),)
 export ARCHS = arm64 arm64e
 export TARGET = iphone:clang:14.5:15.0
 else
-export ARCHS = armv7 armv7s arm64 arm64e
-export TARGET = iphone:clang:14.5:8.0
+$(error set THEOS_PACKAGE_SCHEME to rootless or roothide)
 endif
 
 include $(THEOS)/makefiles/common.mk

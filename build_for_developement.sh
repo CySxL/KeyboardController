@@ -1,5 +1,5 @@
 #/bin/sh
 
-#	build for regular jailbreaks
+#	build for roothide jailbreaks
 make clean
-make package
+make package THEOS_PACKAGE_SCHEME=roothide
