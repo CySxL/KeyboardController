@@ -233,24 +233,6 @@ static void applyHandBias(UIView *layout) {
 	}
 }
 
-static int classifyKeyByGeometry(CGPoint point, CGRect bounds) {
-	if ( bounds.size.width <= 0 || bounds.size.height <= 0 ) {
-		return keyNone;
-	}
-	CGFloat x = point.x / bounds.size.width;
-	CGFloat y = point.y / bounds.size.height;
-	if ( y < 0.70 ) {
-		return keyNone;
-	}
-	if ( x < 0.18 ) {
-		return keyMore;
-	}
-	if ( x > 0.82 ) {
-		return keyReturn;
-	}
-	return keyNone;
-}
-
 @interface KeyboardControllerHandBiasGesture : UIPanGestureRecognizer <UIGestureRecognizerDelegate>
 @property (nonatomic, assign) int startKind;
 @property (nonatomic, weak) UIKeyboardLayoutStar *layout;
@@ -267,9 +249,6 @@ static int classifyKeyByGeometry(CGPoint point, CGRect bounds) {
 	int kind = keyNone;
 	if ( [layout respondsToSelector:@selector(keyHitTest:)] ) {
 		kind = classifyKey([layout keyHitTest:point]);
-	}
-	if ( kind == keyNone ) {
-		kind = classifyKeyByGeometry(point, layout.bounds);
 	}
 	if ( ( kind == keyMore && !oneHandedGestureLeft )
 		|| ( kind == keyDelete && !oneHandedGestureRight )
