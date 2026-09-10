@@ -399,13 +399,24 @@ static void applyHandBias(UIView *layout) {
 }
 - (void)didMoveToWindow {
 	%orig;
-	if ( !enableTweak || ( !oneHandedGestureLeft && !oneHandedGestureRight && !oneHandedGestureReturn ) || !self.window ) {
-		return;
-	}
+	BOOL wanted = enableTweak
+		&& ( oneHandedGestureLeft || oneHandedGestureRight || oneHandedGestureReturn )
+		&& self.window != nil;
+	KeyboardControllerHandBiasGesture *existing = nil;
 	for ( UIGestureRecognizer *recognizer in self.gestureRecognizers ) {
 		if ( [recognizer isKindOfClass:[KeyboardControllerHandBiasGesture class]] ) {
-			return;
+			existing = (KeyboardControllerHandBiasGesture *)recognizer;
+			break;
 		}
+	}
+	if ( !wanted ) {
+		if ( existing ) {
+			[self removeGestureRecognizer:existing];
+		}
+		return;
+	}
+	if ( existing ) {
+		return;
 	}
 	KeyboardControllerHandBiasGesture *pan = [[KeyboardControllerHandBiasGesture alloc] initWithTarget:self action:@selector(handleHandBiasPan:)];
 	pan.minimumNumberOfTouches = 1;
