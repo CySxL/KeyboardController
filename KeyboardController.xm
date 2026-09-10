@@ -235,21 +235,19 @@ static void applyHandBias(UIView *layout) {
 
 @interface KeyboardControllerHandBiasGesture : UIPanGestureRecognizer <UIGestureRecognizerDelegate>
 @property (nonatomic, assign) int startKind;
-@property (nonatomic, weak) UIKeyboardLayoutStar *layout;
+@property (nonatomic, assign) BOOL canHitTest;
 @end
 
 @implementation KeyboardControllerHandBiasGesture
 - (BOOL)gestureRecognizer:(UIGestureRecognizer *)gestureRecognizer shouldReceiveTouch:(UITouch *)touch {
-	UIKeyboardLayoutStar *layout = self.layout;
-	if ( !enableTweak || !layout ) {
+	// self.view is the layout this was added to, and costs no weak table lock.
+	UIKeyboardLayoutStar *layout = (UIKeyboardLayoutStar *)self.view;
+	if ( !enableTweak || !layout || !self.canHitTest ) {
 		self.startKind = keyNone;
 		return NO;
 	}
 	CGPoint point = [touch locationInView:layout];
-	int kind = keyNone;
-	if ( [layout respondsToSelector:@selector(keyHitTest:)] ) {
-		kind = classifyKey([layout keyHitTest:point]);
-	}
+	int kind = classifyKey([layout keyHitTest:point]);
 	if ( ( kind == keyMore && !oneHandedGestureLeft )
 		|| ( kind == keyDelete && !oneHandedGestureRight )
 		|| ( kind == keyReturn && !oneHandedGestureReturn ) ) {
@@ -281,11 +279,10 @@ static void applyHandBias(UIView *layout) {
 
 %hook UITextInputTraits
 - (long long)keyboardAppearance {
-	long long origValue = %orig;
 	if ( enableTweak && uiStyle != 999 ) {
 		return uiStyle;
 	}
-	return origValue;
+	return %orig;
 }
 - (long long)keyboardType {
 	long long origValue = %orig;
@@ -315,12 +312,11 @@ static void applyHandBias(UIView *layout) {
 
 %hook UIScrollView
 - (long long)keyboardDismissMode {
-	long long origValue = %orig;
 	if ( enableTweak && keyboardDismissMode != 999 && canAskForAncestorController ) {
 		id ancestor = [self _viewControllerForAncestor];
+		// UICompatibilityInputViewController is a UIInputViewController subclass,
+		// so the second check covers it. UICandidateViewController is not.
 		if (
-			![ancestor isKindOfClass:%c(UICompatibilityInputViewController)]
-			&&
 			![ancestor isKindOfClass:%c(UICandidateViewController)]
 			&&
 			![ancestor isKindOfClass:%c(UIInputViewController)]
@@ -328,27 +324,25 @@ static void applyHandBias(UIView *layout) {
 			return keyboardDismissMode;
 		}
 	}
-	return origValue;
+	return %orig;
 }
 %end
 
 %hook UIKeyboardEmojiCollectionInputView
 - (int)skinToneWasUsedForEmoji:(id)arg1 {
-	int origValue = %orig;
 	if ( enableTweak && selectingSkinToneForEmoji != 999 ) {
 		return selectingSkinToneForEmoji;
 	}
-	return origValue;
+	return %orig;
 }
 %end
 
 %hook UIKeyboardEmojiPreferences
 - (int)hasDisplayedSkinToneHelp {
-	int origValue = %orig;
 	if ( enableTweak && selectingSkinToneForEmoji != 999 ) {
 		return selectingSkinToneForEmoji;
 	}
-	return origValue;
+	return %orig;
 }
 %end
 
@@ -363,14 +357,13 @@ static void applyHandBias(UIView *layout) {
 
 %hook UIKeyboardLayoutStar
 - (long long)currentHandBias {
-	long long origValue = %orig;
 	if ( enableTweak && ( oneHandedGestureLeft || oneHandedGestureRight || oneHandedGestureReturn ) && gestureHandBias != -1 ) {
 		return gestureHandBias;
 	}
 	if ( enableTweak && oneHandedKeyboard != 999 ) {
 		return oneHandedKeyboard;
 	}
-	return origValue;
+	return %orig;
 }
 - (void)didMoveToWindow {
 	%orig;
@@ -385,7 +378,7 @@ static void applyHandBias(UIView *layout) {
 	KeyboardControllerHandBiasGesture *pan = [[KeyboardControllerHandBiasGesture alloc] initWithTarget:self action:@selector(handleHandBiasPan:)];
 	pan.minimumNumberOfTouches = 1;
 	pan.maximumNumberOfTouches = 1;
-	pan.layout = self;
+	pan.canHitTest = [self respondsToSelector:@selector(keyHitTest:)];
 	pan.delegate = pan;
 	[self addGestureRecognizer:pan];
 }
@@ -422,51 +415,46 @@ static void applyHandBias(UIView *layout) {
 	}
 }
 - (int)shouldShowDictationKey {
-	int origValue = %orig;
 	if ( enableTweak && dictationButton != 999 ) {
 		return dictationButton;
 	}
-	return origValue;
+	return %orig;
 }
 %end
 
 %hook UIKeyboardSplitTransitionView
 - (int)showDictationKey {
-	int origValue = %orig;
 	if ( enableTweak && dictationButton != 999 ) {
 		return dictationButton;
 	}
-	return origValue;
+	return %orig;
 }
 %end
 
 %hook UIPeripheralHost
 - (int)hasDictationKeyboard {
-	int origValue = %orig;
 	if ( enableTweak && dictationButton != 999 ) {
 		return dictationButton;
 	}
-	return origValue;
+	return %orig;
 }
 %end
 
 %hook UIInputSwitcherView
 - (int)_isHandBiasSwitchVisible {
-	int origValue = %orig;
 	if ( enableTweak && oneHandedKeyboard != 999 ) {
 		return 0;
 	}
-	return origValue;
+	return %orig;
 }
 %end
 
 %hook UIKBRenderFactory
 - (int)useBlueThemingForKey:(id)arg1 {
-	int origValue = %orig;
 	if ( enableTweak && useBlueThemingForKey != 999 ) {
 		return useBlueThemingForKey;
 	}
-	return origValue;
+	return %orig;
 }
 %end
 
@@ -475,11 +463,10 @@ static void applyHandBias(UIView *layout) {
 
 %hook UITextInputTraits
 - (int)suppressReturnKeyStyling {
-	int origValue = %orig;
 	if ( enableTweak && returnKeyStyling != 999 ) {
 		return !returnKeyStyling;
 	}
-	return origValue;
+	return %orig;
 }
 %end
 
@@ -490,11 +477,10 @@ static void applyHandBias(UIView *layout) {
 
 %hook UITextInputTraits
 - (int)forceDisableDictation {
-	int origValue = %orig;
 	if ( enableTweak && dictationButton != 999 ) {
 		return !dictationButton;
 	}
-	return origValue;
+	return %orig;
 }
 %end
 
@@ -505,21 +491,19 @@ static void applyHandBias(UIView *layout) {
 
 %hook UITextInputTraits
 - (int)forceEnableDictation {
-	int origValue = %orig;
 	if ( enableTweak && dictationButton != 999 ) {
 		return dictationButton;
 	}
-	return origValue;
+	return %orig;
 }
 %end
 
 %hook UIKeyboardImpl
 - (bool)shouldShowDictationKey {
-	int origValue = %orig;
 	if ( enableTweak && dictationButton != 999 ) {
 		return dictationButton;
 	}
-	return origValue;
+	return %orig;
 }
 %end
 
@@ -530,11 +514,10 @@ static void applyHandBias(UIView *layout) {
 
 %hook UIKeyboardImpl
 - (int)shouldShowInternationalKey {
-	int origValue = %orig;
 	if ( enableTweak && shouldShowInternationalKey != 999 ) {
 		return shouldShowInternationalKey;
 	}
-	return origValue;
+	return %orig;
 }
 %end
 
@@ -545,16 +528,14 @@ static void applyHandBias(UIView *layout) {
 
 %hook _UIKeyboardTextSelectionInteraction
 - (bool)forceTouchGestureRecognizerShouldBegin:(id)arg1 {
-	int origValue = %orig;
 	if ( enableTweak && ( trackpadMode == 404 || trackpadMode == 505 ) ) {
 		return NO;
 	} else if ( enableTweak && trackpadMode == 1 ) {
 		return YES;
 	}
-	return origValue;
+	return %orig;
 }
 - (bool)gestureRecognizerShouldBegin:(id)arg1 {
-	int origValue = %orig;
 	if ( enableTweak && trackpadMode == 404 ) {
 		return NO;
 	} else if ( enableTweak && trackpadMode == 505 ) {
@@ -562,7 +543,7 @@ static void applyHandBias(UIView *layout) {
 	} else if ( enableTweak && trackpadMode == 1 ) {
 		return YES;
 	}
-	return origValue;
+	return %orig;
 }
 %end
 
