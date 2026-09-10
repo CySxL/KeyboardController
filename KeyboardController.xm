@@ -153,6 +153,17 @@ static void ApplySettings(NSDictionary *tweakSettings) {
 	useBlueThemingForKey = IntegerSetting(tweakSettings, @"useBlueThemingForKey", 999);
 }
 
+// True while any keyboard type or return key type is mapped to something other
+// than itself. Decides whether the trait hooks are worth installing at all.
+static bool MapsAreActive() {
+	for ( int i = 0; i < kKeyboardTypeCount; i++ ) {
+		if ( keyboardTypeMap[i] != i || returnKeyTypeMap[i] != i ) {
+			return true;
+		}
+	}
+	return false;
+}
+
 // Two synchronous trips to cfprefsd, in every UIKit process, for every change a
 // settings page posts. Read on a serial queue so the order survives a burst,
 // publish on the main thread so the hooks never read a half written map.
@@ -277,6 +288,8 @@ static void applyHandBias(UIView *layout) {
 @end
 
 
+%group UIStyle
+
 %hook UITextInputTraits
 - (long long)keyboardAppearance {
 	if ( enableTweak && uiStyle != 999 ) {
@@ -284,6 +297,13 @@ static void applyHandBias(UIView *layout) {
 	}
 	return %orig;
 }
+%end
+
+%end
+
+%group TypeMaps
+
+%hook UITextInputTraits
 - (long long)keyboardType {
 	long long origValue = %orig;
 	if ( enableTweak && !traitCopyDepth && origValue >= 0 && origValue < kKeyboardTypeCount ) {
@@ -310,6 +330,10 @@ static void applyHandBias(UIView *layout) {
 }
 %end
 
+%end
+
+%group DismissMode
+
 %hook UIScrollView
 - (long long)keyboardDismissMode {
 	if ( enableTweak && keyboardDismissMode != 999 && canAskForAncestorController ) {
@@ -327,6 +351,10 @@ static void applyHandBias(UIView *layout) {
 	return %orig;
 }
 %end
+
+%end
+
+%group SkinTone
 
 %hook UIKeyboardEmojiCollectionInputView
 - (int)skinToneWasUsedForEmoji:(id)arg1 {
@@ -354,6 +382,10 @@ static void applyHandBias(UIView *layout) {
 	return %orig;
 }
 %end
+
+%end
+
+%group OneHanded
 
 %hook UIKeyboardLayoutStar
 - (long long)currentHandBias {
@@ -414,6 +446,13 @@ static void applyHandBias(UIView *layout) {
 		%orig;
 	}
 }
+%end
+
+%end
+
+%group Dictation
+
+%hook UIKeyboardLayoutStar
 - (int)shouldShowDictationKey {
 	if ( enableTweak && dictationButton != 999 ) {
 		return dictationButton;
@@ -440,6 +479,10 @@ static void applyHandBias(UIView *layout) {
 }
 %end
 
+%end
+
+%group HandBiasSwitch
+
 %hook UIInputSwitcherView
 - (int)_isHandBiasSwitchVisible {
 	if ( enableTweak && oneHandedKeyboard != 999 ) {
@@ -449,6 +492,10 @@ static void applyHandBias(UIView *layout) {
 }
 %end
 
+%end
+
+%group BlueTheming
+
 %hook UIKBRenderFactory
 - (int)useBlueThemingForKey:(id)arg1 {
 	if ( enableTweak && useBlueThemingForKey != 999 ) {
@@ -456,6 +503,8 @@ static void applyHandBias(UIView *layout) {
 	}
 	return %orig;
 }
+%end
+
 %end
 
 
@@ -556,7 +605,9 @@ static void applyHandBias(UIView *layout) {
 	||
 	[executablePath containsString:@"/Application"] ) {
 		canAskForAncestorController = [UIView instancesRespondToSelector:@selector(_viewControllerForAncestor)];
-		ReloadSettings();
+		// Synchronous here, unlike every later reload: the %init calls below read
+		// these values to decide which hooks to install at all.
+		ApplySettings(LoadSettings());
 		CFNotificationCenterAddObserver(
 			CFNotificationCenterGetDarwinNotifyCenter(),
 			NULL,
@@ -565,21 +616,55 @@ static void applyHandBias(UIView *layout) {
 			NULL,
 			CFNotificationSuspensionBehaviorDeliverImmediately
 		);
-		if (@available(iOS 8, *)) {
-			%init(iOS8);
+		// Only the features that are switched on get hooked. Turning one on takes
+		// effect the next time the process starts, not on the settings change.
+		if ( !enableTweak ) {
+			return;
 		}
-		if (@available(iOS 9.3.4, *)) {
-			%init(iOS9_3_4);
+		if ( uiStyle != 999 ) {
+			%init(UIStyle);
 		}
-		if (@available(iOS 10, *)) {
-			%init(iOS10);
+		if ( MapsAreActive() ) {
+			%init(TypeMaps);
 		}
-		if (@available(iOS 11, *)) {
-			%init(iOS11);
+		if ( keyboardDismissMode != 999 && canAskForAncestorController ) {
+			%init(DismissMode);
 		}
-		if (@available(iOS 12, *)) {
-			%init(iOS12);
+		if ( selectingSkinToneForEmoji != 999 ) {
+			%init(SkinTone);
 		}
-		%init;
+		if ( oneHandedKeyboard != 999 || oneHandedGestureLeft || oneHandedGestureRight || oneHandedGestureReturn ) {
+			%init(OneHanded);
+		}
+		if ( oneHandedKeyboard != 999 ) {
+			%init(HandBiasSwitch);
+		}
+		if ( useBlueThemingForKey != 999 ) {
+			%init(BlueTheming);
+		}
+		if ( dictationButton != 999 ) {
+			%init(Dictation);
+			if (@available(iOS 9.3.4, *)) {
+				%init(iOS9_3_4);
+			}
+			if (@available(iOS 10, *)) {
+				%init(iOS10);
+			}
+		}
+		if ( returnKeyStyling != 999 ) {
+			if (@available(iOS 8, *)) {
+				%init(iOS8);
+			}
+		}
+		if ( shouldShowInternationalKey != 999 ) {
+			if (@available(iOS 11, *)) {
+				%init(iOS11);
+			}
+		}
+		if ( trackpadMode != 999 ) {
+			if (@available(iOS 12, *)) {
+				%init(iOS12);
+			}
+		}
 	}
 }
