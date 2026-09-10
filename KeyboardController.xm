@@ -612,9 +612,14 @@ static void applyHandBias(UIView *layout) {
 %ctor {
 	NSArray *arguments = [[NSProcessInfo processInfo] arguments];
 	NSString *executablePath = arguments.count > 0 ? arguments[0] : nil;
+	// UIKit serves the colour picker out of process from its own PlugIns
+	// directory, so that path matches neither of the other two. It is the only
+	// bundle in there whose binary references UITextField.
 	if ( [executablePath containsString:@"SpringBoard.app"]
 	||
-	[executablePath containsString:@"/Application"] ) {
+	[executablePath containsString:@"/Application"]
+	||
+	[executablePath containsString:@"com.apple.UIKit.ColorPicker"] ) {
 		canAskForAncestorController = [UIView instancesRespondToSelector:@selector(_viewControllerForAncestor)];
 		// Synchronous here, unlike every later reload: the %init calls below read
 		// these values to decide which hooks to install at all.
