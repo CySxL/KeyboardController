@@ -113,7 +113,7 @@
 		_specifiers = [NSMutableArray new];
 
 
-		PSSpecifier *oneHandedKeyboardGroup = [self createGroupSpecifierNamed:@"One-Handed Keyboard" key:@"oneHandedKeyboardGroup"];
+		PSSpecifier *oneHandedKeyboardGroup = [self createGroupSpecifierNamed:@"One-Handed Keyboard" footer:@"Force Left and Force Right turn off the swipe gestures below." key:@"oneHandedKeyboardGroup"];
 		[_specifiers addObject:oneHandedKeyboardGroup];
 
 		PSSpecifier *oneHandedKeyboard = [self createSegmentSpecifierNamed:@"oneHandedKeyboard" key:@"oneHandedKeyboard" default:@"999"];
