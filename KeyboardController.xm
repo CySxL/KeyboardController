@@ -76,6 +76,8 @@ static int oneHandedGestureLeft;
 static int oneHandedGestureRight;
 static int oneHandedGestureReturn;
 
+static int oneHandedTools;
+
 static int useBlueThemingForKey;
 
 // A trait copy reads the source through these getters and writes the destination
@@ -156,6 +158,8 @@ static void ApplySettings(NSDictionary *tweakSettings) {
 	oneHandedGestureLeft = BoolSetting(tweakSettings, @"oneHandedGestureLeft", false);
 	oneHandedGestureRight = BoolSetting(tweakSettings, @"oneHandedGestureRight", false);
 	oneHandedGestureReturn = BoolSetting(tweakSettings, @"oneHandedGestureReturn", false);
+
+	oneHandedTools = BoolSetting(tweakSettings, @"oneHandedTools", false);
 
 	useBlueThemingForKey = IntegerSetting(tweakSettings, @"useBlueThemingForKey", 999);
 }
@@ -278,6 +282,140 @@ static int classifyKey(id key) {
 	return YES;
 }
 @end
+
+@interface UIKeyboardImpl : UIView
++ (instancetype)activeInstance;
+- (void)moveCursorLeftShifted:(bool)shifted;
+- (void)moveCursorRightShifted:(bool)shifted;
+- (void)pasteOperation;
+- (id)delegateAsResponder;
+@end
+
+static UIKeyboardImpl *ActiveKeyboard() {
+	Class implClass = %c(UIKeyboardImpl);
+	return [implClass respondsToSelector:@selector(activeInstance)] ? [implClass activeInstance] : nil;
+}
+
+// Sits over the one-handed escape arrow, pinned to it, so it follows the arrow
+// to either side and to any width.
+@interface KeyboardControllerToolsView : UIStackView
+@property (nonatomic, weak) UIView *escapeButton;
+@end
+
+@implementation KeyboardControllerToolsView {
+	CGFloat _symbolWidth;
+}
+- (instancetype)initWithEscapeButton:(UIView *)escapeButton {
+	self = [super initWithFrame:CGRectZero];
+	if ( self ) {
+		_escapeButton = escapeButton;
+		self.axis = UILayoutConstraintAxisVertical;
+		self.distribution = UIStackViewDistributionFillEqually;
+		self.translatesAutoresizingMaskIntoConstraints = NO;
+		[self addTool:@"chevron.left" label:@"Move cursor left" action:@selector(cursorLeft)];
+		[self addTool:@"chevron.right" label:@"Move cursor right" action:@selector(cursorRight)];
+		[self addTool:@"doc.on.doc" label:@"Copy" action:@selector(copyText)];
+		[self addTool:@"doc.on.clipboard" label:@"Paste" action:@selector(pasteText)];
+	}
+	return self;
+}
+- (void)addTool:(NSString *)symbol label:(NSString *)label action:(SEL)action {
+	UIButton *button = [UIButton buttonWithType:UIButtonTypeSystem];
+	[button setImage:[UIImage systemImageNamed:symbol] forState:UIControlStateNormal];
+	button.tintColor = [UIColor labelColor];
+	button.accessibilityLabel = label;
+	[button addTarget:self action:action forControlEvents:UIControlEventTouchUpInside];
+	[self addArrangedSubview:button];
+}
+- (void)layoutSubviews {
+	[super layoutSubviews];
+	CGFloat width = self.bounds.size.width;
+	if ( width == _symbolWidth ) {
+		return;
+	}
+	_symbolWidth = width;
+	// Four tenths of the column, 16 pt on a 41 pt column.
+	UIImageSymbolConfiguration *config = [UIImageSymbolConfiguration configurationWithPointSize:width * 0.4];
+	for ( UIButton *button in self.arrangedSubviews ) {
+		[button setPreferredSymbolConfiguration:config forImageInState:UIControlStateNormal];
+	}
+}
+- (void)cursorLeft {
+	UIKeyboardImpl *keyboard = ActiveKeyboard();
+	if ( [keyboard respondsToSelector:@selector(moveCursorLeftShifted:)] ) {
+		[keyboard moveCursorLeftShifted:NO];
+	}
+}
+- (void)cursorRight {
+	UIKeyboardImpl *keyboard = ActiveKeyboard();
+	if ( [keyboard respondsToSelector:@selector(moveCursorRightShifted:)] ) {
+		[keyboard moveCursorRightShifted:NO];
+	}
+}
+- (void)copyText {
+	UIKeyboardImpl *keyboard = ActiveKeyboard();
+	id responder = [keyboard respondsToSelector:@selector(delegateAsResponder)] ? [keyboard delegateAsResponder] : nil;
+	if ( [responder isKindOfClass:[UIResponder class]] && [responder canPerformAction:@selector(copy:) withSender:nil] ) {
+		[responder copy:nil];
+	}
+}
+- (void)pasteText {
+	UIKeyboardImpl *keyboard = ActiveKeyboard();
+	if ( [keyboard respondsToSelector:@selector(pasteOperation)] ) {
+		[keyboard pasteOperation];
+	}
+}
+@end
+
+// The system shows and hides the escape arrow with hidden and leaves its alpha
+// at 1, so alpha is free to hide it under the tools.
+static void UpdateEscapeTools(UIView *layout) {
+	static Ivar escapeIvar;
+	static dispatch_once_t onceToken;
+	dispatch_once(&onceToken, ^{
+		escapeIvar = class_getInstanceVariable(%c(UIKeyboardLayoutStar), "_biasEscapeButton");
+	});
+	if ( !escapeIvar ) {
+		return;
+	}
+	id escape = object_getIvar(layout, escapeIvar);
+	if ( ![escape isKindOfClass:[UIView class]] ) {
+		return;
+	}
+	UIView *escapeButton = (UIView *)escape;
+	KeyboardControllerToolsView *tools = nil;
+	for ( UIView *subview in layout.subviews ) {
+		if ( [subview isKindOfClass:[KeyboardControllerToolsView class]] ) {
+			tools = (KeyboardControllerToolsView *)subview;
+			break;
+		}
+	}
+	if ( tools && tools.escapeButton != escapeButton ) {
+		[tools removeFromSuperview];
+		tools = nil;
+	}
+	if ( !enableTweak || !oneHandedTools || escapeButton.superview != layout ) {
+		if ( tools ) {
+			[tools removeFromSuperview];
+			escapeButton.alpha = 1;
+			escapeButton.userInteractionEnabled = YES;
+		}
+		return;
+	}
+	if ( !tools ) {
+		tools = [[KeyboardControllerToolsView alloc] initWithEscapeButton:escapeButton];
+		[layout addSubview:tools];
+		[NSLayoutConstraint activateConstraints:@[
+			[tools.leadingAnchor constraintEqualToAnchor:escapeButton.leadingAnchor],
+			[tools.trailingAnchor constraintEqualToAnchor:escapeButton.trailingAnchor],
+			[tools.topAnchor constraintEqualToAnchor:escapeButton.topAnchor],
+			[tools.bottomAnchor constraintEqualToAnchor:escapeButton.bottomAnchor]
+		]];
+	}
+	escapeButton.alpha = 0;
+	escapeButton.userInteractionEnabled = NO;
+	tools.hidden = escapeButton.hidden;
+}
 
 
 %group UIStyle
@@ -459,6 +597,7 @@ static int classifyKey(id key) {
 	} else {
 		%orig;
 	}
+	UpdateEscapeTools(self);
 }
 %end
 
@@ -641,7 +780,7 @@ static int classifyKey(id key) {
 		if ( hookEverything || selectingSkinToneForEmoji != 999 ) {
 			%init(SkinTone);
 		}
-		if ( hookEverything || oneHandedKeyboard != 999 || oneHandedGestureLeft || oneHandedGestureRight || oneHandedGestureReturn ) {
+		if ( hookEverything || oneHandedKeyboard != 999 || oneHandedGestureLeft || oneHandedGestureRight || oneHandedGestureReturn || oneHandedTools ) {
 			%init(OneHanded);
 		}
 		if ( hookEverything || oneHandedKeyboard != 999 ) {
