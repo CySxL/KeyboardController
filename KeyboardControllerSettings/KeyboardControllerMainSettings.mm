@@ -95,9 +95,7 @@ static UIImage *KeyboardControllerIcon(NSString *name) {
 
 @end
 
-// The test fields used to persist whatever was typed into them, including the
-// number pad field whose footer describes PIN entry. Nothing ever read them
-// back. They no longer write, so clear what earlier versions left behind.
+// Removes what was typed into the test fields by versions that stored it.
 static void ClearStoredTestFields(void) {
 	NSArray *keys = @[
 		@"testKeyboard",
