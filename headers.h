@@ -29,37 +29,18 @@
 @end
 
 @interface UIDevice (KeyboardController)
-+ (id)currentDevice;
 - (bool)_supportsForceTouch;
 @end
 
-@interface NSMutableArray (KeyboardController)
-- (void)addObject:(id)arg1;
-@end
-
 @interface PSSpecifier (KeyboardController)
-+ (id)buttonSpecifierWithTitle:(id)arg1 target:(id)arg2 action:(SEL)arg3 confirmationInfo:(id)arg4;
 + (id)groupSpecifierWithHeader:(id)arg1 footer:(id)arg2;
-+ (id)defaultTextInputTraits;
 + (id)emptyGroupSpecifier;
 - (void)setValues:(id)arg1 titles:(id)arg2;
-- (void)setValues:(id)arg1 titles:(id)arg2 shortTitles:(id)arg3;
-- (void)setupIconImageWithPath:(id)arg1;
 - (void)setKeyboardType:(long long)arg1 autoCaps:(int)arg2 autoCorrection:(int)arg3;
 @end
 
 @interface PSTextFieldSpecifier : PSSpecifier
 - (void)setPlaceholder:(id)arg1;
-@end
-
-@interface UIKeyboardCache : NSObject
-+ (id)sharedInstance;
-- (void)purge;
-- (void)clearNonPersistentCache;
-@end
-
-
-@interface PSListController (KeyboardController)
 @end
 
 @interface KeyboardControllerHeaderCell : PSTableCell

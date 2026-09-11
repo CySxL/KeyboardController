@@ -276,9 +276,6 @@ static void applyHandBias(UIView *layout) {
 }
 
 - (BOOL)gestureRecognizerShouldBegin:(UIPanGestureRecognizer *)gestureRecognizer {
-	if ( ![gestureRecognizer isKindOfClass:[UIPanGestureRecognizer class]] ) {
-		return YES;
-	}
 	CGPoint velocity = [gestureRecognizer velocityInView:gestureRecognizer.view];
 	if ( fabs(velocity.x) > fabs(velocity.y) ) {
 		return NO;
