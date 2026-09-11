@@ -2,7 +2,7 @@
 Control your Keyboard
 
 ## Compatibility
-iOS 8 and above. Rootful, rootless, and roothide jailbreaks.
+iOS 15 and above. Rootless and roothide jailbreaks.
 
 ## Features:
 * UI Style (Default, Light, Dark)
