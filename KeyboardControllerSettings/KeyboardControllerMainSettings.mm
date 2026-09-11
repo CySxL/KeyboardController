@@ -258,53 +258,47 @@ static void ClearStoredTestFields(void) {
 		[keyboardDismissMode setValues:@[ @"999", @"0", @"1", @"2" ] titles:@[ @"Default", @"Disabled", @"Immediately", @"Interactive" ]];
 		[_specifiers addObject:keyboardDismissMode];
 
-		if (@available(iOS 12, *)) {
-			NSArray *trackpadModeTitles = @[ @"Default", @"Disabled", @"Spacebar only", @"Enabled" ];
-			NSArray *trackpadModeValues = @[ @"999", @"404", @"505", @"1" ];
+		NSArray *trackpadModeTitles = @[ @"Default", @"Disabled", @"Spacebar only", @"Enabled" ];
+		NSArray *trackpadModeValues = @[ @"999", @"404", @"505", @"1" ];
 
-			NSString *trackpadModeFooter = @"Default: only the spacebar activates the trackpad.\nDisabled: the trackpad is off on the whole keyboard.\nEnabled: the whole keyboard activates the trackpad.";
+		NSString *trackpadModeFooter = @"Default: only the spacebar activates the trackpad.\nDisabled: the trackpad is off on the whole keyboard.\nEnabled: the whole keyboard activates the trackpad.";
 
-			BOOL supportsForceTouch = [[UIDevice currentDevice] respondsToSelector:@selector(_supportsForceTouch)]
-				&& [[UIDevice currentDevice] _supportsForceTouch];
-			if ( !supportsForceTouch ) {
-				trackpadModeTitles = @[ @"Default", @"Disabled", @"Enabled" ];
-				trackpadModeValues = @[ @"999", @"404", @"505" ];
-			} else {
-				trackpadModeFooter = @"Default: system default.\nDisabled: the trackpad is off on the whole keyboard.\nSpacebar only: only the spacebar activates the trackpad.\nEnabled: the whole keyboard activates the trackpad.";
-			}
-
-			PSSpecifier *trackpadModeGroup = [self createGroupSpecifierNamed:@"Trackpad Mode" footer:trackpadModeFooter key:@"trackpadModeGroup"];
-			[_specifiers addObject:trackpadModeGroup];
-
-			PSSpecifier *trackpadMode = [self createSegmentSpecifierNamed:@"" key:@"trackpadMode" default:@"999"];
-			[trackpadMode setValues:trackpadModeValues titles:trackpadModeTitles];
-			[_specifiers addObject:trackpadMode];
+		BOOL supportsForceTouch = [[UIDevice currentDevice] respondsToSelector:@selector(_supportsForceTouch)]
+			&& [[UIDevice currentDevice] _supportsForceTouch];
+		if ( !supportsForceTouch ) {
+			trackpadModeTitles = @[ @"Default", @"Disabled", @"Enabled" ];
+			trackpadModeValues = @[ @"999", @"404", @"505" ];
+		} else {
+			trackpadModeFooter = @"Default: system default.\nDisabled: the trackpad is off on the whole keyboard.\nSpacebar only: only the spacebar activates the trackpad.\nEnabled: the whole keyboard activates the trackpad.";
 		}
 
-		if (@available(iOS 10, *)) {
-			PSSpecifier *dictationButtonGroup = [self createGroupSpecifierNamed:@"Dictation Button" footer:nil key:@"dictationButtonGroup"];
-			[_specifiers addObject:dictationButtonGroup];
+		PSSpecifier *trackpadModeGroup = [self createGroupSpecifierNamed:@"Trackpad Mode" footer:trackpadModeFooter key:@"trackpadModeGroup"];
+		[_specifiers addObject:trackpadModeGroup];
 
-			PSSpecifier *dictationButton = [self createSegmentSpecifierNamed:@"dictationButton" key:@"dictationButton" default:@"999"];
-			[dictationButton setValues:@[ @"999", @"0" ] titles:@[ @"Default", @"Disable" ]];
-			[_specifiers addObject:dictationButton];
-		}
+		PSSpecifier *trackpadMode = [self createSegmentSpecifierNamed:@"" key:@"trackpadMode" default:@"999"];
+		[trackpadMode setValues:trackpadModeValues titles:trackpadModeTitles];
+		[_specifiers addObject:trackpadMode];
 
-		if (@available(iOS 11, *)) {
-			PSSpecifier *shouldShowInternationalKeyGroup = [self createGroupSpecifierNamed:@"Globe Button" footer:nil key:@"shouldShowInternationalKeyGroup"];
-			[_specifiers addObject:shouldShowInternationalKeyGroup];
+		PSSpecifier *dictationButtonGroup = [self createGroupSpecifierNamed:@"Dictation Button" footer:nil key:@"dictationButtonGroup"];
+		[_specifiers addObject:dictationButtonGroup];
 
-			PSSpecifier *shouldShowInternationalKey = [self createSegmentSpecifierNamed:@"shouldShowInternationalKey" key:@"shouldShowInternationalKey" default:@"999"];
-			[shouldShowInternationalKey setValues:@[ @"999", @"0" ] titles:@[ @"Default", @"Disable" ]];
-			[_specifiers addObject:shouldShowInternationalKey];
-		}
+		PSSpecifier *dictationButton = [self createSegmentSpecifierNamed:@"dictationButton" key:@"dictationButton" default:@"999"];
+		[dictationButton setValues:@[ @"999", @"0" ] titles:@[ @"Default", @"Disable" ]];
+		[_specifiers addObject:dictationButton];
 
-			PSSpecifier *returnKeyStylingGroup = [self createGroupSpecifierNamed:@"Return Key Styling" footer:nil key:@"returnKeyStylingGroup"];
-			[_specifiers addObject:returnKeyStylingGroup];
+		PSSpecifier *shouldShowInternationalKeyGroup = [self createGroupSpecifierNamed:@"Globe Button" footer:nil key:@"shouldShowInternationalKeyGroup"];
+		[_specifiers addObject:shouldShowInternationalKeyGroup];
 
-			PSSpecifier *returnKeyStyling = [self createSegmentSpecifierNamed:@"returnKeyStyling" key:@"returnKeyStyling" default:@"999"];
-			[returnKeyStyling setValues:@[ @"999", @"0", @"1" ] titles:@[ @"Default", @"Disable", @"Enable" ]];
-			[_specifiers addObject:returnKeyStyling];
+		PSSpecifier *shouldShowInternationalKey = [self createSegmentSpecifierNamed:@"shouldShowInternationalKey" key:@"shouldShowInternationalKey" default:@"999"];
+		[shouldShowInternationalKey setValues:@[ @"999", @"0" ] titles:@[ @"Default", @"Disable" ]];
+		[_specifiers addObject:shouldShowInternationalKey];
+
+		PSSpecifier *returnKeyStylingGroup = [self createGroupSpecifierNamed:@"Return Key Styling" footer:nil key:@"returnKeyStylingGroup"];
+		[_specifiers addObject:returnKeyStylingGroup];
+
+		PSSpecifier *returnKeyStyling = [self createSegmentSpecifierNamed:@"returnKeyStyling" key:@"returnKeyStyling" default:@"999"];
+		[returnKeyStyling setValues:@[ @"999", @"0", @"1" ] titles:@[ @"Default", @"Disable", @"Enable" ]];
+		[_specifiers addObject:returnKeyStyling];
 
 		PSSpecifier *selectingSkinToneForEmojiGroup = [self createGroupSpecifierNamed:@"Selecting skin tone for emoji" footer:nil key:@"selectingSkinToneForEmojiGroup"];
 		[_specifiers addObject:selectingSkinToneForEmojiGroup];
@@ -321,13 +315,8 @@ static void ClearStoredTestFields(void) {
 			[_specifiers addObject:betaOptions];
 		}
 
-		NSArray *testKeyboardTitles = @[ @"Default", @"ASCII Capable", @"Numbers and Punctuation", @"URL", @"Number Pad", @"Phone Pad", @"Name Phone Pad", @"Email Address", @"Decimal Pad", @"Twitter", @"Web Search" ];
-		NSArray *testKeyboardValues = @[ @"0", @"1", @"2", @"3", @"4", @"5", @"6", @"7", @"8", @"9", @"10" ];
-
-		if (@available(iOS 10, *)) {
-			testKeyboardTitles = @[ @"Default", @"ASCII Capable", @"Numbers and Punctuation", @"URL", @"Number Pad", @"Phone Pad", @"Name Phone Pad", @"Email Address", @"Decimal Pad", @"Twitter", @"Web Search", @"ASCII Capable Number Pad" ];
-			testKeyboardValues = @[ @"0", @"1", @"2", @"3", @"4", @"5", @"6", @"7", @"8", @"9", @"10", @"11" ];
-		}
+		NSArray *testKeyboardTitles = @[ @"Default", @"ASCII Capable", @"Numbers and Punctuation", @"URL", @"Number Pad", @"Phone Pad", @"Name Phone Pad", @"Email Address", @"Decimal Pad", @"Twitter", @"Web Search", @"ASCII Capable Number Pad" ];
+		NSArray *testKeyboardValues = @[ @"0", @"1", @"2", @"3", @"4", @"5", @"6", @"7", @"8", @"9", @"10", @"11" ];
 		PSSpecifier *testKeyboardGroup = [self createGroupSpecifierNamed:@"Testing area" footer:nil key:@"testKeyboardGroup"];
 		[_specifiers addObject:testKeyboardGroup];
 

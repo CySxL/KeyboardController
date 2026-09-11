@@ -39,13 +39,8 @@
 	if ( !_specifiers ) {
 		_specifiers = [NSMutableArray new];
 
-		NSArray *values = @[ @"0", @"1", @"2", @"3", @"4", @"5", @"6", @"7", @"8", @"9", @"10" ];
-		NSArray *titles = @[ @"Default", @"Go", @"Google", @"Join", @"Next", @"Route", @"Search", @"Send", @"Yahoo", @"Done", @"Emergency Call" ];
-
-		if (@available(iOS 9, *)) {
-			values = @[ @"0", @"1", @"2", @"3", @"4", @"5", @"6", @"7", @"8", @"9", @"10", @"11" ];
-			titles = @[ @"Default", @"Go", @"Google", @"Join", @"Next", @"Route", @"Search", @"Send", @"Yahoo", @"Done", @"Emergency Call", @"Continue" ];
-		}
+		NSArray *values = @[ @"0", @"1", @"2", @"3", @"4", @"5", @"6", @"7", @"8", @"9", @"10", @"11" ];
+		NSArray *titles = @[ @"Default", @"Go", @"Google", @"Join", @"Next", @"Route", @"Search", @"Send", @"Yahoo", @"Done", @"Emergency Call", @"Continue" ];
 
 		PSSpecifier *emptyGroup = [PSSpecifier emptyGroupSpecifier];
 		[_specifiers addObject:emptyGroup];
@@ -94,11 +89,9 @@
 		[returnKeyTypeEmergencyCall setValues:values titles:titles];
 		[_specifiers addObject:returnKeyTypeEmergencyCall];
 
-		if (@available(iOS 9, *)) {
-			PSSpecifier *returnKeyTypeContinue = [self createLinkListSpecifierNamed:@"Continue" key:@"returnKeyTypeContinue" default:@"11"];
-			[returnKeyTypeContinue setValues:values titles:titles];
-			[_specifiers addObject:returnKeyTypeContinue];
-		}
+		PSSpecifier *returnKeyTypeContinue = [self createLinkListSpecifierNamed:@"Continue" key:@"returnKeyTypeContinue" default:@"11"];
+		[returnKeyTypeContinue setValues:values titles:titles];
+		[_specifiers addObject:returnKeyTypeContinue];
 	}
 	return _specifiers;
 }

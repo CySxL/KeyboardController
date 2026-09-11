@@ -113,29 +113,27 @@
 		_specifiers = [NSMutableArray new];
 
 
-		if (@available(iOS 11, *)) {
-			PSSpecifier *oneHandedKeyboardGroup = [self createGroupSpecifierNamed:@"One-Handed Keyboard" key:@"oneHandedKeyboardGroup"];
-			[_specifiers addObject:oneHandedKeyboardGroup];
+		PSSpecifier *oneHandedKeyboardGroup = [self createGroupSpecifierNamed:@"One-Handed Keyboard" key:@"oneHandedKeyboardGroup"];
+		[_specifiers addObject:oneHandedKeyboardGroup];
 
-			PSSpecifier *oneHandedKeyboard = [self createSegmentSpecifierNamed:@"oneHandedKeyboard" key:@"oneHandedKeyboard" default:@"999"];
-			[oneHandedKeyboard setValues:@[ @"999", @"2", @"1" ] titles:@[ @"Default", @"Force Left", @"Force Right" ]];
-			[_specifiers addObject:oneHandedKeyboard];
+		PSSpecifier *oneHandedKeyboard = [self createSegmentSpecifierNamed:@"oneHandedKeyboard" key:@"oneHandedKeyboard" default:@"999"];
+		[oneHandedKeyboard setValues:@[ @"999", @"2", @"1" ] titles:@[ @"Default", @"Force Left", @"Force Right" ]];
+		[_specifiers addObject:oneHandedKeyboard];
 
-			PSSpecifier *oneHandedGestureLeftGroup = [self createGroupSpecifierNamed:@"Left One-Handed Keyboard" footer:@"Swipe downward on the 123 key to switch to the left one-handed keyboard. Swipe down again to return to center." key:@"oneHandedGestureLeftGroup"];
-			[_specifiers addObject:oneHandedGestureLeftGroup];
+		PSSpecifier *oneHandedGestureLeftGroup = [self createGroupSpecifierNamed:@"Left One-Handed Keyboard" footer:@"Swipe downward on the 123 key to switch to the left one-handed keyboard. Swipe down again to return to center." key:@"oneHandedGestureLeftGroup"];
+		[_specifiers addObject:oneHandedGestureLeftGroup];
 
-			PSSpecifier *oneHandedGestureLeft = [self createSwitchSpecifierNamed:@"Swipe down on 123 key" key:@"oneHandedGestureLeft" default:@"0"];
-			[_specifiers addObject:oneHandedGestureLeft];
+		PSSpecifier *oneHandedGestureLeft = [self createSwitchSpecifierNamed:@"Swipe down on 123 key" key:@"oneHandedGestureLeft" default:@"0"];
+		[_specifiers addObject:oneHandedGestureLeft];
 
-			PSSpecifier *oneHandedGestureRightGroup = [self createGroupSpecifierNamed:@"Right One-Handed Keyboard" footer:@"Swipe downward on the delete key or the enter/return key to switch to the right one-handed keyboard. Swipe down again on the same key to return to center. Each key has its own switch, so the one you leave off keeps working normally." key:@"oneHandedGestureRightGroup"];
-			[_specifiers addObject:oneHandedGestureRightGroup];
+		PSSpecifier *oneHandedGestureRightGroup = [self createGroupSpecifierNamed:@"Right One-Handed Keyboard" footer:@"Swipe downward on the delete key or the enter/return key to switch to the right one-handed keyboard. Swipe down again on the same key to return to center. Each key has its own switch, so the one you leave off keeps working normally." key:@"oneHandedGestureRightGroup"];
+		[_specifiers addObject:oneHandedGestureRightGroup];
 
-			PSSpecifier *oneHandedGestureRight = [self createSwitchSpecifierNamed:@"Swipe down on delete key" key:@"oneHandedGestureRight" default:@"0"];
-			[_specifiers addObject:oneHandedGestureRight];
+		PSSpecifier *oneHandedGestureRight = [self createSwitchSpecifierNamed:@"Swipe down on delete key" key:@"oneHandedGestureRight" default:@"0"];
+		[_specifiers addObject:oneHandedGestureRight];
 
-			PSSpecifier *oneHandedGestureReturn = [self createSwitchSpecifierNamed:@"Swipe down on enter/return key" key:@"oneHandedGestureReturn" default:@"0"];
-			[_specifiers addObject:oneHandedGestureReturn];
-		}
+		PSSpecifier *oneHandedGestureReturn = [self createSwitchSpecifierNamed:@"Swipe down on enter/return key" key:@"oneHandedGestureReturn" default:@"0"];
+		[_specifiers addObject:oneHandedGestureReturn];
 
 		PSSpecifier *useBlueThemingForKeyGroup = [self createGroupSpecifierNamed:@"Blue Theming of Keyboard" key:@"useBlueThemingForKeyGroup"];
 		[_specifiers addObject:useBlueThemingForKeyGroup];

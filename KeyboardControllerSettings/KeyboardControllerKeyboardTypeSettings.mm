@@ -87,14 +87,8 @@
 	if ( !_specifiers ) {
 		_specifiers = [NSMutableArray new];
 
-		NSArray *titles = @[ @"Default", @"ASCII Capable", @"Numbers and Punctuation", @"URL", @"Number Pad", @"Phone Pad", @"Name Phone Pad", @"Email Address", @"Decimal Pad", @"Twitter", @"Web Search" ];
-		NSArray *values = @[ @"0", @"1", @"2", @"3", @"4", @"5", @"6", @"7", @"8", @"9", @"10" ];
-
-
-		if (@available(iOS 10, *)) {
-			titles = @[ @"Default", @"ASCII Capable", @"Numbers and Punctuation", @"URL", @"Number Pad", @"Phone Pad", @"Name Phone Pad", @"Email Address", @"Decimal Pad", @"Twitter", @"Web Search", @"ASCII Capable Number Pad" ];
-			values = @[ @"0", @"1", @"2", @"3", @"4", @"5", @"6", @"7", @"8", @"9", @"10", @"11" ];
-		}
+		NSArray *titles = @[ @"Default", @"ASCII Capable", @"Numbers and Punctuation", @"URL", @"Number Pad", @"Phone Pad", @"Name Phone Pad", @"Email Address", @"Decimal Pad", @"Twitter", @"Web Search", @"ASCII Capable Number Pad" ];
+		NSArray *values = @[ @"0", @"1", @"2", @"3", @"4", @"5", @"6", @"7", @"8", @"9", @"10", @"11" ];
 
 		PSSpecifier *defaultKeyboardGroup = [self createGroupSpecifierNamed:@"" footer:@"Specifies the default keyboard for the current input method." key:@"defaultKeyboardGroup"];
 		[_specifiers addObject:defaultKeyboardGroup];
@@ -192,55 +186,53 @@
 		[emailAddressKeyboardTry setPlaceholder:@"Test Email Address keyboard"];
 		[_specifiers addObject:emailAddressKeyboardTry];
 
-			PSSpecifier *decimalPadKeyboardGroup = [self createGroupSpecifierNamed:@"" footer:@"Specifies a keyboard with numbers and a decimal point." key:@"decimalPadKeyboardGroup"];
-			[_specifiers addObject:decimalPadKeyboardGroup];
+		PSSpecifier *decimalPadKeyboardGroup = [self createGroupSpecifierNamed:@"" footer:@"Specifies a keyboard with numbers and a decimal point." key:@"decimalPadKeyboardGroup"];
+		[_specifiers addObject:decimalPadKeyboardGroup];
 
-			PSSpecifier *decimalPadKeyboard = [self createLinkListSpecifierNamed:@"Decimal Pad keyboard" key:@"decimalPadKeyboard" default:@"8"];
-			[decimalPadKeyboard setValues:values titles:titles];
-			[_specifiers addObject:decimalPadKeyboard];
+		PSSpecifier *decimalPadKeyboard = [self createLinkListSpecifierNamed:@"Decimal Pad keyboard" key:@"decimalPadKeyboard" default:@"8"];
+		[decimalPadKeyboard setValues:values titles:titles];
+		[_specifiers addObject:decimalPadKeyboard];
 
-			PSTextFieldSpecifier *decimalPadKeyboardTry = [self createEditTextSpecifierNamed:@"" key:@"decimalPadKeyboardTry" default:nil];
-			[decimalPadKeyboardTry setKeyboardType:8 autoCaps:NO autoCorrection:NO];
-			[decimalPadKeyboardTry setPlaceholder:@"Test Decimal Pad keyboard"];
-			[_specifiers addObject:decimalPadKeyboardTry];
+		PSTextFieldSpecifier *decimalPadKeyboardTry = [self createEditTextSpecifierNamed:@"" key:@"decimalPadKeyboardTry" default:nil];
+		[decimalPadKeyboardTry setKeyboardType:8 autoCaps:NO autoCorrection:NO];
+		[decimalPadKeyboardTry setPlaceholder:@"Test Decimal Pad keyboard"];
+		[_specifiers addObject:decimalPadKeyboardTry];
 
-			PSSpecifier *twitterKeyboardGroup = [self createGroupSpecifierNamed:@"" footer:@"Specifies a keyboard optimized for Twitter text entry, with easy access to the at (“@”) and hash (“#”) characters." key:@"twitterKeyboardGroup"];
-			[_specifiers addObject:twitterKeyboardGroup];
+		PSSpecifier *twitterKeyboardGroup = [self createGroupSpecifierNamed:@"" footer:@"Specifies a keyboard optimized for Twitter text entry, with easy access to the at (“@”) and hash (“#”) characters." key:@"twitterKeyboardGroup"];
+		[_specifiers addObject:twitterKeyboardGroup];
 
-			PSSpecifier *twitterKeyboard = [self createLinkListSpecifierNamed:@"Twitter keyboard" key:@"twitterKeyboard" default:@"9"];
-			[twitterKeyboard setValues:values titles:titles];
-			[_specifiers addObject:twitterKeyboard];
+		PSSpecifier *twitterKeyboard = [self createLinkListSpecifierNamed:@"Twitter keyboard" key:@"twitterKeyboard" default:@"9"];
+		[twitterKeyboard setValues:values titles:titles];
+		[_specifiers addObject:twitterKeyboard];
 
-			PSTextFieldSpecifier *twitterKeyboardTry = [self createEditTextSpecifierNamed:@"" key:@"twitterKeyboardTry" default:nil];
-			[twitterKeyboardTry setKeyboardType:9 autoCaps:NO autoCorrection:NO];
-			[twitterKeyboardTry setPlaceholder:@"Test Twitter keyboard"];
-			[_specifiers addObject:twitterKeyboardTry];
+		PSTextFieldSpecifier *twitterKeyboardTry = [self createEditTextSpecifierNamed:@"" key:@"twitterKeyboardTry" default:nil];
+		[twitterKeyboardTry setKeyboardType:9 autoCaps:NO autoCorrection:NO];
+		[twitterKeyboardTry setPlaceholder:@"Test Twitter keyboard"];
+		[_specifiers addObject:twitterKeyboardTry];
 
-			PSSpecifier *webSearchKeyboardGroup = [self createGroupSpecifierNamed:@"" footer:@"Specifies a keyboard optimized for web search terms and URL entry. This keyboard type prominently features the space and period (“.”) characters." key:@"webSearchKeyboardGroup"];
-			[_specifiers addObject:webSearchKeyboardGroup];
+		PSSpecifier *webSearchKeyboardGroup = [self createGroupSpecifierNamed:@"" footer:@"Specifies a keyboard optimized for web search terms and URL entry. This keyboard type prominently features the space and period (“.”) characters." key:@"webSearchKeyboardGroup"];
+		[_specifiers addObject:webSearchKeyboardGroup];
 
-			PSSpecifier *webSearchKeyboard = [self createLinkListSpecifierNamed:@"Web Search keyboard" key:@"webSearchKeyboard" default:@"10"];
-			[webSearchKeyboard setValues:values titles:titles];
-			[_specifiers addObject:webSearchKeyboard];
+		PSSpecifier *webSearchKeyboard = [self createLinkListSpecifierNamed:@"Web Search keyboard" key:@"webSearchKeyboard" default:@"10"];
+		[webSearchKeyboard setValues:values titles:titles];
+		[_specifiers addObject:webSearchKeyboard];
 
-			PSTextFieldSpecifier *webSearchKeyboardTry = [self createEditTextSpecifierNamed:@"" key:@"webSearchKeyboardTry" default:nil];
-			[webSearchKeyboardTry setKeyboardType:10 autoCaps:NO autoCorrection:NO];
-			[webSearchKeyboardTry setPlaceholder:@"Test Web Search keyboard"];
-			[_specifiers addObject:webSearchKeyboardTry];
+		PSTextFieldSpecifier *webSearchKeyboardTry = [self createEditTextSpecifierNamed:@"" key:@"webSearchKeyboardTry" default:nil];
+		[webSearchKeyboardTry setKeyboardType:10 autoCaps:NO autoCorrection:NO];
+		[webSearchKeyboardTry setPlaceholder:@"Test Web Search keyboard"];
+		[_specifiers addObject:webSearchKeyboardTry];
 
-		if (@available(iOS 10, *)) {
-			PSSpecifier *asciiCapableNumberPadKeyboardGroup = [self createGroupSpecifierNamed:@"" footer:@"Specifies a number pad that outputs only ASCII digits." key:@"asciiCapableNumberPadKeyboardGroup"];
-			[_specifiers addObject:asciiCapableNumberPadKeyboardGroup];
+		PSSpecifier *asciiCapableNumberPadKeyboardGroup = [self createGroupSpecifierNamed:@"" footer:@"Specifies a number pad that outputs only ASCII digits." key:@"asciiCapableNumberPadKeyboardGroup"];
+		[_specifiers addObject:asciiCapableNumberPadKeyboardGroup];
 
-			PSSpecifier *asciiCapableNumberPadKeyboard = [self createLinkListSpecifierNamed:@"ASCII Capable Number Pad keyboard" key:@"asciiCapableNumberPadKeyboard" default:@"11"];
-			[asciiCapableNumberPadKeyboard setValues:values titles:titles];
-			[_specifiers addObject:asciiCapableNumberPadKeyboard];
+		PSSpecifier *asciiCapableNumberPadKeyboard = [self createLinkListSpecifierNamed:@"ASCII Capable Number Pad keyboard" key:@"asciiCapableNumberPadKeyboard" default:@"11"];
+		[asciiCapableNumberPadKeyboard setValues:values titles:titles];
+		[_specifiers addObject:asciiCapableNumberPadKeyboard];
 
-			PSTextFieldSpecifier *asciiCapableNumberPadKeyboardTry = [self createEditTextSpecifierNamed:@"" key:@"asciiCapableNumberPadKeyboardTry" default:nil];
-			[asciiCapableNumberPadKeyboardTry setKeyboardType:11 autoCaps:NO autoCorrection:NO];
-			[asciiCapableNumberPadKeyboardTry setPlaceholder:@"Test ASCII Capable Number Pad keyboard"];
-			[_specifiers addObject:asciiCapableNumberPadKeyboardTry];
-		}
+		PSTextFieldSpecifier *asciiCapableNumberPadKeyboardTry = [self createEditTextSpecifierNamed:@"" key:@"asciiCapableNumberPadKeyboardTry" default:nil];
+		[asciiCapableNumberPadKeyboardTry setKeyboardType:11 autoCaps:NO autoCorrection:NO];
+		[asciiCapableNumberPadKeyboardTry setPlaceholder:@"Test ASCII Capable Number Pad keyboard"];
+		[_specifiers addObject:asciiCapableNumberPadKeyboardTry];
 	}
 	return _specifiers;
 }

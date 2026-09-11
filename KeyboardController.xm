@@ -494,6 +494,30 @@ static void applyHandBias(UIView *layout) {
 }
 %end
 
+%hook UITextInputTraits
+- (int)forceDisableDictation {
+	if ( enableTweak && dictationButton != 999 ) {
+		return !dictationButton;
+	}
+	return %orig;
+}
+- (int)forceEnableDictation {
+	if ( enableTweak && dictationButton != 999 ) {
+		return dictationButton;
+	}
+	return %orig;
+}
+%end
+
+%hook UIKeyboardImpl
+- (bool)shouldShowDictationKey {
+	if ( enableTweak && dictationButton != 999 ) {
+		return dictationButton;
+	}
+	return %orig;
+}
+%end
+
 %end
 
 %group HandBiasSwitch
@@ -523,7 +547,7 @@ static void applyHandBias(UIView *layout) {
 %end
 
 
-%group iOS8
+%group ReturnKeyStyling
 
 %hook UITextInputTraits
 - (int)suppressReturnKeyStyling {
@@ -537,44 +561,7 @@ static void applyHandBias(UIView *layout) {
 %end
 
 
-%group iOS9_3_4
-
-%hook UITextInputTraits
-- (int)forceDisableDictation {
-	if ( enableTweak && dictationButton != 999 ) {
-		return !dictationButton;
-	}
-	return %orig;
-}
-%end
-
-%end
-
-
-%group iOS10
-
-%hook UITextInputTraits
-- (int)forceEnableDictation {
-	if ( enableTweak && dictationButton != 999 ) {
-		return dictationButton;
-	}
-	return %orig;
-}
-%end
-
-%hook UIKeyboardImpl
-- (bool)shouldShowDictationKey {
-	if ( enableTweak && dictationButton != 999 ) {
-		return dictationButton;
-	}
-	return %orig;
-}
-%end
-
-%end
-
-
-%group iOS11
+%group GlobeKey
 
 %hook UIKeyboardImpl
 - (int)shouldShowInternationalKey {
@@ -588,7 +575,7 @@ static void applyHandBias(UIView *layout) {
 %end
 
 
-%group iOS12
+%group Trackpad
 
 %hook _UIKeyboardTextSelectionInteraction
 - (bool)forceTouchGestureRecognizerShouldBegin:(id)arg1 {
@@ -664,27 +651,15 @@ static void applyHandBias(UIView *layout) {
 		}
 		if ( dictationButton != 999 ) {
 			%init(Dictation);
-			if (@available(iOS 9.3.4, *)) {
-				%init(iOS9_3_4);
-			}
-			if (@available(iOS 10, *)) {
-				%init(iOS10);
-			}
 		}
 		if ( returnKeyStyling != 999 ) {
-			if (@available(iOS 8, *)) {
-				%init(iOS8);
-			}
+			%init(ReturnKeyStyling);
 		}
 		if ( shouldShowInternationalKey != 999 ) {
-			if (@available(iOS 11, *)) {
-				%init(iOS11);
-			}
+			%init(GlobeKey);
 		}
 		if ( trackpadMode != 999 ) {
-			if (@available(iOS 12, *)) {
-				%init(iOS12);
-			}
+			%init(Trackpad);
 		}
 	}
 }
