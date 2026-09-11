@@ -198,14 +198,19 @@ static void receivedNotification(
 	ReloadSettings();
 }
 
-static long long gestureHandBias = -1;
-
 enum { keyNone = 0, keyMore = 1, keyDelete = 2, keyReturn = 3 };
 
 static const CGFloat biasSwipeThreshold = 18.0;
 
 @interface UIKeyboardLayoutStar : UIView
 - (id)keyHitTest:(CGPoint)point;
+- (void)setKeyboardBias:(long long)bias;
+@end
+
+@interface UIKeyboardPreferencesController : NSObject
++ (instancetype)sharedPreferencesController;
+- (long long)handBias;
+- (void)setHandBias:(long long)bias;
 @end
 
 @interface UIKBTree : NSObject
@@ -234,23 +239,6 @@ static int classifyKey(id key) {
 	return keyNone;
 }
 
-static void applyHandBias(UIView *layout) {
-	Class implClass = %c(UIKeyboardImpl);
-	id impl = nil;
-	if ( [implClass respondsToSelector:@selector(activeInstance)] ) {
-		impl = [implClass performSelector:@selector(activeInstance)];
-	} else if ( [implClass respondsToSelector:@selector(sharedInstance)] ) {
-		impl = [implClass performSelector:@selector(sharedInstance)];
-	}
-	if ( impl && [impl respondsToSelector:@selector(updateLayout)] ) {
-		[impl performSelector:@selector(updateLayout)];
-	}
-	if ( layout ) {
-		[layout setNeedsLayout];
-		[layout layoutIfNeeded];
-	}
-}
-
 @interface KeyboardControllerHandBiasGesture : UIPanGestureRecognizer <UIGestureRecognizerDelegate>
 @property (nonatomic, assign) int startKind;
 @property (nonatomic, assign) BOOL canHitTest;
@@ -260,7 +248,7 @@ static void applyHandBias(UIView *layout) {
 - (BOOL)gestureRecognizer:(UIGestureRecognizer *)gestureRecognizer shouldReceiveTouch:(UITouch *)touch {
 	// self.view is the layout this was added to, and costs no weak table lock.
 	UIKeyboardLayoutStar *layout = (UIKeyboardLayoutStar *)self.view;
-	if ( !enableTweak || !layout || !self.canHitTest ) {
+	if ( !enableTweak || oneHandedKeyboard != 999 || !layout || !self.canHitTest ) {
 		self.startKind = keyNone;
 		return NO;
 	}
@@ -393,9 +381,6 @@ static void applyHandBias(UIView *layout) {
 
 %hook UIKeyboardLayoutStar
 - (long long)currentHandBias {
-	if ( enableTweak && ( oneHandedGestureLeft || oneHandedGestureRight || oneHandedGestureReturn ) && gestureHandBias != -1 ) {
-		return gestureHandBias;
-	}
 	if ( enableTweak && oneHandedKeyboard != 999 ) {
 		return oneHandedKeyboard;
 	}
@@ -446,16 +431,30 @@ static void applyHandBias(UIView *layout) {
 	if ( !swipedDown ) {
 		return;
 	}
-	if ( startKind == keyMore && oneHandedGestureLeft ) {
-		gestureHandBias = ( gestureHandBias == 2 ) ? 0 : 2;
-		applyHandBias(self);
-	} else if ( ( startKind == keyDelete && oneHandedGestureRight ) || ( startKind == keyReturn && oneHandedGestureReturn ) ) {
-		gestureHandBias = ( gestureHandBias == 1 ) ? 0 : 1;
-		applyHandBias(self);
+	// The same two calls the globe key menu makes, so the dock follows and the
+	// choice carries to other apps.
+	Class prefsClass = %c(UIKeyboardPreferencesController);
+	if ( oneHandedKeyboard != 999 || ![prefsClass respondsToSelector:@selector(sharedPreferencesController)] || ![self respondsToSelector:@selector(setKeyboardBias:)] ) {
+		return;
 	}
+	UIKeyboardPreferencesController *prefs = [prefsClass sharedPreferencesController];
+	if ( ![prefs respondsToSelector:@selector(handBias)] || ![prefs respondsToSelector:@selector(setHandBias:)] ) {
+		return;
+	}
+	long long current = [prefs handBias];
+	long long bias;
+	if ( startKind == keyMore && oneHandedGestureLeft ) {
+		bias = ( current == 2 ) ? 0 : 2;
+	} else if ( ( startKind == keyDelete && oneHandedGestureRight ) || ( startKind == keyReturn && oneHandedGestureReturn ) ) {
+		bias = ( current == 1 ) ? 0 : 1;
+	} else {
+		return;
+	}
+	[prefs setHandBias:bias];
+	[self setKeyboardBias:bias];
 }
 - (void)_setBiasEscapeButtonVisible:(int)arg1 {
-	if ( enableTweak && ( oneHandedKeyboard != 999 || ( ( oneHandedGestureLeft || oneHandedGestureRight || oneHandedGestureReturn ) && gestureHandBias > 0 ) ) ) {
+	if ( enableTweak && oneHandedKeyboard != 999 ) {
 		%orig(0);
 	} else {
 		%orig;
