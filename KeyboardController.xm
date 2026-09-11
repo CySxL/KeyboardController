@@ -114,6 +114,13 @@ static long long IntegerSetting(NSDictionary *settings, NSString *key, long long
 	return fallback;
 }
 
+// For values UIKit reads as an enum. Anything the settings page cannot write
+// counts as unset.
+static long long RangedSetting(NSDictionary *settings, NSString *key, long long min, long long max, long long fallback) {
+	long long value = IntegerSetting(settings, key, fallback);
+	return ( value >= min && value <= max ) ? value : fallback;
+}
+
 static bool BoolSetting(NSDictionary *settings, NSString *key, bool fallback) {
 	id value = [settings objectForKey:key];
 	if ( [value isKindOfClass:[NSNumber class]] || [value isKindOfClass:[NSString class]] ) {
@@ -125,14 +132,14 @@ static bool BoolSetting(NSDictionary *settings, NSString *key, bool fallback) {
 static void ApplySettings(NSDictionary *tweakSettings) {
 	enableTweak = BoolSetting(tweakSettings, @"enableTweak", YES);
 
-	uiStyle = IntegerSetting(tweakSettings, @"uiStyle", 999);
+	uiStyle = RangedSetting(tweakSettings, @"uiStyle", 0, 2, 999);
 
 	for ( int i = 0; i < kKeyboardTypeCount; i++ ) {
-		keyboardTypeMap[i] = IntegerSetting(tweakSettings, keyboardTypeKeys[i], i);
-		returnKeyTypeMap[i] = IntegerSetting(tweakSettings, returnKeyTypeKeys[i], i);
+		keyboardTypeMap[i] = RangedSetting(tweakSettings, keyboardTypeKeys[i], 0, kKeyboardTypeCount - 1, i);
+		returnKeyTypeMap[i] = RangedSetting(tweakSettings, returnKeyTypeKeys[i], 0, kKeyboardTypeCount - 1, i);
 	}
 
-	keyboardDismissMode = IntegerSetting(tweakSettings, @"keyboardDismissMode", 999);
+	keyboardDismissMode = RangedSetting(tweakSettings, @"keyboardDismissMode", 0, 2, 999);
 
 	trackpadMode = IntegerSetting(tweakSettings, @"trackpadMode", 999);
 
@@ -144,7 +151,7 @@ static void ApplySettings(NSDictionary *tweakSettings) {
 
 	selectingSkinToneForEmoji = IntegerSetting(tweakSettings, @"selectingSkinToneForEmoji", 999);
 
-	oneHandedKeyboard = IntegerSetting(tweakSettings, @"oneHandedKeyboard", 999);
+	oneHandedKeyboard = RangedSetting(tweakSettings, @"oneHandedKeyboard", 0, 2, 999);
 
 	oneHandedGestureLeft = BoolSetting(tweakSettings, @"oneHandedGestureLeft", false);
 	oneHandedGestureRight = BoolSetting(tweakSettings, @"oneHandedGestureRight", false);
