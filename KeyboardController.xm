@@ -625,40 +625,42 @@ static void applyHandBias(UIView *layout) {
 		);
 		// Only the features that are switched on get hooked. Turning one on takes
 		// effect the next time the process starts, not on the settings change.
-		if ( !enableTweak ) {
+		// Settings hooks everything, so its testing areas show a change at once.
+		BOOL hookEverything = [[NSBundle mainBundle].bundleIdentifier isEqualToString:@"com.apple.Preferences"];
+		if ( !enableTweak && !hookEverything ) {
 			return;
 		}
-		if ( uiStyle != 999 ) {
+		if ( hookEverything || uiStyle != 999 ) {
 			%init(UIStyle);
 		}
-		if ( MapsAreActive() ) {
+		if ( hookEverything || MapsAreActive() ) {
 			%init(TypeMaps);
 		}
-		if ( keyboardDismissMode != 999 && canAskForAncestorController ) {
+		if ( ( hookEverything || keyboardDismissMode != 999 ) && canAskForAncestorController ) {
 			%init(DismissMode);
 		}
-		if ( selectingSkinToneForEmoji != 999 ) {
+		if ( hookEverything || selectingSkinToneForEmoji != 999 ) {
 			%init(SkinTone);
 		}
-		if ( oneHandedKeyboard != 999 || oneHandedGestureLeft || oneHandedGestureRight || oneHandedGestureReturn ) {
+		if ( hookEverything || oneHandedKeyboard != 999 || oneHandedGestureLeft || oneHandedGestureRight || oneHandedGestureReturn ) {
 			%init(OneHanded);
 		}
-		if ( oneHandedKeyboard != 999 ) {
+		if ( hookEverything || oneHandedKeyboard != 999 ) {
 			%init(HandBiasSwitch);
 		}
-		if ( useBlueThemingForKey != 999 ) {
+		if ( hookEverything || useBlueThemingForKey != 999 ) {
 			%init(BlueTheming);
 		}
-		if ( dictationButton != 999 ) {
+		if ( hookEverything || dictationButton != 999 ) {
 			%init(Dictation);
 		}
-		if ( returnKeyStyling != 999 ) {
+		if ( hookEverything || returnKeyStyling != 999 ) {
 			%init(ReturnKeyStyling);
 		}
-		if ( shouldShowInternationalKey != 999 ) {
+		if ( hookEverything || shouldShowInternationalKey != 999 ) {
 			%init(GlobeKey);
 		}
-		if ( trackpadMode != 999 ) {
+		if ( hookEverything || trackpadMode != 999 ) {
 			%init(Trackpad);
 		}
 	}

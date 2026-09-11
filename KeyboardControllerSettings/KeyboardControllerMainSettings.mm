@@ -317,7 +317,7 @@ static void ClearStoredTestFields(void) {
 
 		NSArray *testKeyboardTitles = @[ @"Default", @"ASCII Capable", @"Numbers and Punctuation", @"URL", @"Number Pad", @"Phone Pad", @"Name Phone Pad", @"Email Address", @"Decimal Pad", @"Twitter", @"Web Search", @"ASCII Capable Number Pad" ];
 		NSArray *testKeyboardValues = @[ @"0", @"1", @"2", @"3", @"4", @"5", @"6", @"7", @"8", @"9", @"10", @"11" ];
-		PSSpecifier *testKeyboardGroup = [self createGroupSpecifierNamed:@"Testing area" footer:nil key:@"testKeyboardGroup"];
+		PSSpecifier *testKeyboardGroup = [self createGroupSpecifierNamed:@"Testing area" footer:@"Changes show here straight away. Other apps pick up an option switched on from Default the next time they open." key:@"testKeyboardGroup"];
 		[_specifiers addObject:testKeyboardGroup];
 
 		PSSpecifier *testKeyboardSelected = [self createLinkListSpecifierNamed:@"Test keyboard type:" key:@"testKeyboardSelected" default:@"0" detail:@"PSListItemsController"];

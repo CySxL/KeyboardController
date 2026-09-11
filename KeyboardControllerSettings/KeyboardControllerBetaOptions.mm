@@ -142,7 +142,7 @@
 		[useBlueThemingForKey setValues:@[ @"999", @"0", @"1" ] titles:@[ @"Default", @"Disable", @"Enable" ]];
 		[_specifiers addObject:useBlueThemingForKey];
 
-		PSSpecifier *testKeyboardGroup = [PSSpecifier groupSpecifierWithName:@"Testing area"];
+		PSSpecifier *testKeyboardGroup = [self createGroupSpecifierNamed:@"Testing area" footer:@"Changes show here straight away. Other apps pick up an option switched on from Default the next time they open." key:@"testKeyboardGroup"];
 		[_specifiers addObject:testKeyboardGroup];
 
 		PSTextFieldSpecifier *testKeyboard = [self createEditTextSpecifierNamed:@"" key:@"testKeyboard" placeholder:@"Test keyboard here"];
