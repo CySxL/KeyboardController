@@ -333,6 +333,8 @@ static void ClearStoredTestFields(void) {
 
 		PSSpecifier *testKeyboardSelected = [self createLinkListSpecifierNamed:@"Test keyboard type:" key:@"testKeyboardSelected" default:@"0" detail:@"PSListItemsController"];
 		[testKeyboardSelected setValues:testKeyboardValues titles:testKeyboardTitles];
+		// Only this page reads it, so it wakes no other process.
+		[testKeyboardSelected removePropertyForKey:@"PostNotification"];
 		[_specifiers addObject:testKeyboardSelected];
 
 
