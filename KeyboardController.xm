@@ -210,7 +210,6 @@ static const CGFloat biasSwipeThreshold = 18.0;
 @interface UIKeyboardLayoutStar : UIView
 - (id)keyHitTest:(CGPoint)point;
 - (void)setKeyboardBias:(long long)bias;
-- (double)biasedKeyboardWidthRatio;
 - (id)keyplane;
 - (id)renderConfig;
 @end
@@ -227,15 +226,37 @@ static const CGFloat biasSwipeThreshold = 18.0;
 - (NSArray *)keys;
 - (bool)visible;
 - (CGRect)frame;
+- (void)setState:(int)state;
 @end
 
 @interface UIKBKeyplaneView : UIView
 - (id)factory;
+- (id)viewForKey:(id)key;
 @end
 
 @interface UIKBRenderFactory : NSObject
-- (double)keyCornerRadius;
-- (id)controlKeyBackgroundColorName;
+- (id)traitsForKey:(id)key onKeyplane:(id)keyplane;
+@end
+
+@interface UIKBRenderTraits : NSObject
+- (id)geometry;
+- (id)backgroundGradient;
+- (NSArray *)renderEffects;
+- (bool)controlOpacities;
+@end
+
+@interface UIKBRenderGeometry : NSObject
+- (CGRect)paddedFrame;
+- (double)roundRectRadius;
+@end
+
+@interface UIKBGradient : NSObject
+- (NSString *)flatColorName;
+@end
+
+@interface UIKBEdgeEffect : NSObject
+- (unsigned long long)edges;
+- (UIEdgeInsets)insets;
 @end
 
 @interface UIKBRenderConfig : NSObject
@@ -316,16 +337,38 @@ static UIKeyboardImpl *ActiveKeyboard() {
 	return [implClass respondsToSelector:@selector(activeInstance)] ? [implClass activeInstance] : nil;
 }
 
+// How the keyboard draws a control key, read from the render factory.
+@interface KeyboardControllerKeyStyle : NSObject
+@property (nonatomic, strong) UIColor *color;
+@property (nonatomic, strong) UIColor *pressedColor;
+@property (nonatomic, strong) id filter;
+@property (nonatomic, strong) id pressedFilter;
+@property (nonatomic, strong) UIColor *edgeColor;
+@property (nonatomic, assign) CGFloat edgeOffset;
+@property (nonatomic, assign) CGFloat cornerRadius;
+@property (nonatomic, strong) UIColor *foreground;
+@end
+
+@implementation KeyboardControllerKeyStyle
+@end
+
 // One tool drawn as a key, the symbol in a fixed slot so the names line up.
 @interface KeyboardControllerToolButton : UIButton
 @property (nonatomic, readonly) UIImageView *symbolView;
 @property (nonatomic, readonly) UILabel *nameLabel;
+@property (nonatomic, readonly) CALayer *keyLayer;
+@property (nonatomic, readonly) CALayer *edgeLayer;
+@property (nonatomic, strong) KeyboardControllerKeyStyle *style;
 @end
 
 @implementation KeyboardControllerToolButton
 - (instancetype)initWithSymbol:(NSString *)symbol name:(NSString *)name {
 	self = [super initWithFrame:CGRectZero];
 	if ( self ) {
+		_edgeLayer = [CALayer layer];
+		_keyLayer = [CALayer layer];
+		[self.layer addSublayer:_edgeLayer];
+		[self.layer addSublayer:_keyLayer];
 		_symbolView = [[UIImageView alloc] initWithImage:[UIImage systemImageNamed:symbol]];
 		_symbolView.contentMode = UIViewContentModeCenter;
 		_nameLabel = [[UILabel alloc] init];
@@ -334,9 +377,43 @@ static UIKeyboardImpl *ActiveKeyboard() {
 		_nameLabel.minimumScaleFactor = 0.5;
 		[self addSubview:_symbolView];
 		[self addSubview:_nameLabel];
-		self.clipsToBounds = YES;
 	}
 	return self;
+}
+- (void)applyStyle {
+	KeyboardControllerKeyStyle *style = _style;
+	BOOL pressed = self.highlighted;
+	[CATransaction begin];
+	[CATransaction setDisableActions:YES];
+	_keyLayer.backgroundColor = ( pressed ? style.pressedColor : style.color ).CGColor;
+	_keyLayer.compositingFilter = pressed ? style.pressedFilter : style.filter;
+	_keyLayer.cornerRadius = style.cornerRadius;
+	_edgeLayer.backgroundColor = style.edgeColor.CGColor;
+	_edgeLayer.compositingFilter = _keyLayer.compositingFilter;
+	_edgeLayer.cornerRadius = style.cornerRadius;
+	[CATransaction commit];
+	_symbolView.tintColor = style.foreground;
+	_nameLabel.textColor = style.foreground;
+}
+- (void)setStyle:(KeyboardControllerKeyStyle *)style {
+	_style = style;
+	[self applyStyle];
+}
+- (void)setHighlighted:(BOOL)highlighted {
+	BOOL changed = highlighted != self.highlighted;
+	[super setHighlighted:highlighted];
+	if ( changed ) {
+		[self applyStyle];
+	}
+}
+- (void)layoutSubviews {
+	[super layoutSubviews];
+	CGRect bounds = self.bounds;
+	[CATransaction begin];
+	[CATransaction setDisableActions:YES];
+	_keyLayer.frame = bounds;
+	_edgeLayer.frame = CGRectOffset(bounds, 0, _style.edgeOffset);
+	[CATransaction commit];
 }
 @end
 
@@ -373,12 +450,10 @@ static UIKeyboardImpl *ActiveKeyboard() {
 		[self setNeedsLayout];
 	}
 }
-- (void)applyBackground:(UIColor *)background foreground:(UIColor *)foreground cornerRadius:(CGFloat)radius {
+- (void)applyStyle:(KeyboardControllerKeyStyle *)style {
 	for ( KeyboardControllerToolButton *button in self.subviews ) {
-		button.backgroundColor = background;
-		button.layer.cornerRadius = radius;
-		button.symbolView.tintColor = foreground;
-		button.nameLabel.textColor = foreground;
+		button.style = style;
+		[button setNeedsLayout];
 	}
 }
 - (void)layoutSubviews {
@@ -452,63 +527,161 @@ static UIColor *NamedKeyboardColor(id name) {
 	return color ? [UIColor colorWithCGColor:color] : nil;
 }
 
-// Apple's width ratio gives the gap beside the keys. The keys give the rest:
-// the top of the first row to the bottom of the last, the gap between rows,
-// and their margin to the far edge, used on the outer side of the tools.
+static UIKBRenderTraits *TraitsForKey(UIKBRenderFactory *factory, id key, id keyplane) {
+	if ( !key || ![factory respondsToSelector:@selector(traitsForKey:onKeyplane:)] ) {
+		return nil;
+	}
+	id traits = [factory traitsForKey:key onKeyplane:keyplane];
+	return [traits respondsToSelector:@selector(geometry)] ? traits : nil;
+}
+
+// The key as drawn, which is inset from the key's frame.
+static CGRect DrawnFrame(UIKBRenderTraits *traits, UIView *plane, UIView *layout) {
+	UIKBRenderGeometry *geometry = [traits geometry];
+	if ( ![geometry respondsToSelector:@selector(paddedFrame)] ) {
+		return CGRectNull;
+	}
+	CGRect frame = [geometry paddedFrame];
+	return plane ? [plane convertRect:frame toView:layout] : frame;
+}
+
+static UIColor *BackgroundColor(UIKBRenderTraits *traits) {
+	UIKBGradient *gradient = [traits respondsToSelector:@selector(backgroundGradient)] ? [traits backgroundGradient] : nil;
+	return NamedKeyboardColor([gradient respondsToSelector:@selector(flatColorName)] ? [gradient flatColorName] : nil);
+}
+
+static BOOL ControlOpacities(UIKBRenderTraits *traits) {
+	return [traits respondsToSelector:@selector(controlOpacities)] && [traits controlOpacities];
+}
+
+// Place and look come from the keys as the factory draws them: the top of the
+// first row to the bottom of the last, the gaps between rows and between keys,
+// the margin to the outer edge, and the colours and blend of the bottom row's
+// first key, which is 123 or ABC.
 static void LayOutTools(KeyboardControllerToolsView *tools, UIKeyboardLayoutStar *layout, id keyplaneView) {
 	UIView *escapeButton = tools.escapeButton;
 	CGRect bounds = layout.bounds;
-	CGRect area = escapeButton.frame;
-	CGFloat spacing = 0;
-	UIView *plane = [keyplaneView isKindOfClass:[UIView class]] ? keyplaneView : nil;
-	double ratio = [layout respondsToSelector:@selector(biasedKeyboardWidthRatio)] ? [layout biasedKeyboardWidthRatio] : 0;
+	UIKBKeyplaneView *plane = [keyplaneView isKindOfClass:[UIView class]] ? keyplaneView : nil;
+	UIKBRenderFactory *factory = [plane respondsToSelector:@selector(factory)] ? [plane factory] : nil;
 	UIKBTree *keyplane = [layout respondsToSelector:@selector(keyplane)] ? [layout keyplane] : nil;
 	NSArray *keys = [keyplane respondsToSelector:@selector(keys)] ? [keyplane keys] : nil;
-	if ( ratio > 0 && ratio < 1 && [keys isKindOfClass:[NSArray class]] ) {
-		CGFloat minX = CGFLOAT_MAX, maxX = -CGFLOAT_MAX;
-		CGFloat top = CGFLOAT_MAX, bottom = -CGFLOAT_MAX, topHeight = 0, secondTop = CGFLOAT_MAX;
-		for ( UIKBTree *key in keys ) {
-			if ( ![key respondsToSelector:@selector(visible)] || ![key respondsToSelector:@selector(frame)] || ![key visible] ) {
-				continue;
-			}
-			CGRect frame = plane ? [plane convertRect:[key frame] toView:layout] : [key frame];
-			minX = MIN(minX, CGRectGetMinX(frame));
-			maxX = MAX(maxX, CGRectGetMaxX(frame));
-			bottom = MAX(bottom, CGRectGetMaxY(frame));
-			CGFloat y = CGRectGetMinY(frame);
-			if ( y < top - 0.5 ) {
-				secondTop = top;
-				top = y;
-				topHeight = frame.size.height;
-			} else if ( y <= top + 0.5 ) {
-				topHeight = MAX(topHeight, frame.size.height);
-			} else if ( y < secondTop ) {
-				secondTop = y;
-			}
+	if ( ![keys isKindOfClass:[NSArray class]] ) {
+		keys = nil;
+	}
+
+	CGFloat top = CGFLOAT_MAX, secondTop = CGFLOAT_MAX, bottom = -CGFLOAT_MAX;
+	UIKBTree *bottomKey = nil;
+	for ( UIKBTree *key in keys ) {
+		if ( ![key respondsToSelector:@selector(visible)] || ![key respondsToSelector:@selector(frame)] || ![key visible] ) {
+			continue;
 		}
-		if ( bottom > top ) {
-			if ( secondTop < CGFLOAT_MAX ) {
-				spacing = MAX(0, secondTop - top - topHeight);
+		CGRect frame = [key frame];
+		CGFloat y = CGRectGetMinY(frame);
+		if ( y < top - 0.5 ) {
+			secondTop = top;
+			top = y;
+		} else if ( y > top + 0.5 && y < secondTop ) {
+			secondTop = y;
+		}
+		CGFloat maxY = CGRectGetMaxY(frame);
+		if ( maxY > bottom + 0.5 || ( maxY >= bottom - 0.5 && CGRectGetMinX(frame) < CGRectGetMinX([bottomKey frame]) ) ) {
+			bottom = maxY;
+			bottomKey = key;
+		}
+	}
+	UIKBTree *topLeft = nil, *topNext = nil, *topRight = nil, *secondRow = nil;
+	for ( UIKBTree *key in keys ) {
+		if ( ![key respondsToSelector:@selector(visible)] || ![key respondsToSelector:@selector(frame)] || ![key visible] ) {
+			continue;
+		}
+		CGRect frame = [key frame];
+		CGFloat y = CGRectGetMinY(frame);
+		if ( fabs(y - top) <= 0.5 ) {
+			if ( !topLeft || CGRectGetMinX(frame) < CGRectGetMinX([topLeft frame]) ) {
+				topNext = topLeft;
+				topLeft = key;
+			} else if ( !topNext || CGRectGetMinX(frame) < CGRectGetMinX([topNext frame]) ) {
+				topNext = key;
 			}
-			CGFloat gap = bounds.size.width * ( 1 - ratio );
-			BOOL left = CGRectGetMidX(escapeButton.frame) < CGRectGetMidX(bounds);
-			CGFloat outer = MAX(0, left ? CGRectGetMaxX(bounds) - maxX : minX - CGRectGetMinX(bounds));
-			CGFloat width = gap - outer - spacing;
-			if ( width > 0 ) {
-				CGFloat x = left ? CGRectGetMinX(bounds) + outer : CGRectGetMaxX(bounds) - gap + spacing;
-				area = CGRectMake(x, top, width, bottom - top);
+			if ( !topRight || CGRectGetMaxX(frame) > CGRectGetMaxX([topRight frame]) ) {
+				topRight = key;
 			}
+		} else if ( !secondRow && fabs(y - secondTop) <= 0.5 ) {
+			secondRow = key;
+		}
+	}
+
+	CGRect area = escapeButton.frame;
+	CGFloat spacing = 0;
+	UIKBRenderTraits *controlTraits = TraitsForKey(factory, bottomKey, keyplane);
+	CGRect first = DrawnFrame(TraitsForKey(factory, topLeft, keyplane), plane, layout);
+	CGRect next = DrawnFrame(TraitsForKey(factory, topNext, keyplane), plane, layout);
+	CGRect last = DrawnFrame(TraitsForKey(factory, topRight, keyplane), plane, layout);
+	CGRect second = DrawnFrame(TraitsForKey(factory, secondRow, keyplane), plane, layout);
+	CGRect lowest = DrawnFrame(controlTraits, plane, layout);
+	if ( !CGRectIsNull(first) && !CGRectIsNull(next) && !CGRectIsNull(last) && !CGRectIsNull(lowest) ) {
+		spacing = CGRectIsNull(second) ? 0 : MAX(0, CGRectGetMinY(second) - CGRectGetMaxY(first));
+		CGFloat keyGap = MAX(0, CGRectGetMinX(next) - CGRectGetMaxX(first));
+		BOOL left = CGRectGetMidX(escapeButton.frame) < CGRectGetMidX(bounds);
+		CGFloat x, width;
+		if ( left ) {
+			x = CGRectGetMinX(bounds) + MAX(0, CGRectGetMaxX(bounds) - CGRectGetMaxX(last));
+			width = CGRectGetMinX(first) - keyGap - x;
+		} else {
+			x = CGRectGetMaxX(last) + keyGap;
+			width = CGRectGetMaxX(bounds) - MAX(0, CGRectGetMinX(first) - CGRectGetMinX(bounds)) - x;
+		}
+		CGFloat height = CGRectGetMaxY(lowest) - CGRectGetMinY(first);
+		if ( width > 0 && height > 0 ) {
+			area = CGRectMake(x, CGRectGetMinY(first), width, height);
 		}
 	}
 	tools.frame = area;
 	tools.spacing = spacing;
 
-	UIKBRenderFactory *factory = [plane respondsToSelector:@selector(factory)] ? [(UIKBKeyplaneView *)plane factory] : nil;
-	UIColor *background = [factory respondsToSelector:@selector(controlKeyBackgroundColorName)] ? NamedKeyboardColor([factory controlKeyBackgroundColorName]) : nil;
-	CGFloat radius = [factory respondsToSelector:@selector(keyCornerRadius)] ? [factory keyCornerRadius] : 0;
+	KeyboardControllerKeyStyle *style = [KeyboardControllerKeyStyle new];
+	style.color = BackgroundColor(controlTraits);
+	UIKBTree *pressedKey = [bottomKey respondsToSelector:@selector(copyWithZone:)] && [bottomKey respondsToSelector:@selector(setState:)] ? [bottomKey copy] : nil;
+	// 4 is the pressed state; set on a copy so the key on screen is untouched.
+	[pressedKey setState:4];
+	UIKBRenderTraits *pressedTraits = TraitsForKey(factory, pressedKey, keyplane);
+	style.pressedColor = BackgroundColor(pressedTraits) ?: style.color;
+	id filter = nil;
+	UIView *keyView = bottomKey && [plane respondsToSelector:@selector(viewForKey:)] ? [plane viewForKey:bottomKey] : nil;
+	if ( [keyView isKindOfClass:[UIView class]] ) {
+		for ( CALayer *sublayer in keyView.layer.sublayers ) {
+			if ( sublayer.compositingFilter ) {
+				filter = sublayer.compositingFilter;
+				break;
+			}
+		}
+	}
+	style.filter = ControlOpacities(controlTraits) ? filter : nil;
+	style.pressedFilter = ControlOpacities(pressedTraits) ? filter : nil;
+	NSArray *effects = [controlTraits respondsToSelector:@selector(renderEffects)] ? [controlTraits renderEffects] : nil;
+	for ( id effect in ( [effects isKindOfClass:[NSArray class]] ? effects : nil ) ) {
+		if ( ![effect isKindOfClass:%c(UIKBEdgeEffect)] || ![effect respondsToSelector:@selector(edges)] || ![effect respondsToSelector:@selector(insets)] ) {
+			continue;
+		}
+		if ( !( [(UIKBEdgeEffect *)effect edges] & UIRectEdgeBottom ) ) {
+			continue;
+		}
+		id name = nil;
+		@try {
+			name = [effect valueForKey:@"colorName"];
+		} @catch ( NSException *exception ) {
+		}
+		// A copy of the key moved down by the inset shows only as the bottom edge.
+		style.edgeColor = NamedKeyboardColor(name);
+		style.edgeOffset = MAX(0, -[(UIKBEdgeEffect *)effect insets].bottom);
+		break;
+	}
+	UIKBRenderGeometry *geometry = [controlTraits geometry];
+	style.cornerRadius = [geometry respondsToSelector:@selector(roundRectRadius)] ? [geometry roundRectRadius] : 0;
 	UIKBRenderConfig *config = [layout respondsToSelector:@selector(renderConfig)] ? [layout renderConfig] : nil;
 	BOOL light = [config respondsToSelector:@selector(lightKeyboard)] ? [config lightKeyboard] : tools.traitCollection.userInterfaceStyle != UIUserInterfaceStyleDark;
-	[tools applyBackground:background foreground:( light ? [UIColor blackColor] : [UIColor whiteColor] ) cornerRadius:radius];
+	style.foreground = light ? [UIColor blackColor] : [UIColor whiteColor];
+	[tools applyStyle:style];
 }
 
 // The system shows and hides the escape arrow with hidden and leaves its alpha
