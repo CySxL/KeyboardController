@@ -356,6 +356,7 @@ static UIKeyboardImpl *ActiveKeyboard() {
 		[self addTool:@"chevron.right" name:@"Right" label:@"Move cursor right" action:@selector(cursorRight)];
 		[self addTool:@"doc.on.doc" name:@"Copy" label:@"Copy" action:@selector(copyText)];
 		[self addTool:@"doc.on.clipboard" name:@"Paste" label:@"Paste" action:@selector(pasteText)];
+		[self addTool:@"selection.pin.in.out" name:@"Select All" label:@"Select all" action:@selector(selectAllText)];
 	}
 	return self;
 }
@@ -426,6 +427,13 @@ static UIKeyboardImpl *ActiveKeyboard() {
 	UIKeyboardImpl *keyboard = ActiveKeyboard();
 	if ( [keyboard respondsToSelector:@selector(pasteOperation)] ) {
 		[keyboard pasteOperation];
+	}
+}
+- (void)selectAllText {
+	UIKeyboardImpl *keyboard = ActiveKeyboard();
+	id responder = [keyboard respondsToSelector:@selector(delegateAsResponder)] ? [keyboard delegateAsResponder] : nil;
+	if ( [responder isKindOfClass:[UIResponder class]] && [responder canPerformAction:@selector(selectAll:) withSender:nil] ) {
+		[responder selectAll:nil];
 	}
 }
 @end
