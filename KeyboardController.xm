@@ -16,6 +16,7 @@
 
 
 #include "headers.h"
+#include <dlfcn.h>
 
 extern "C" NSString *PreferencesFilePath(void);
 
@@ -209,6 +210,9 @@ static const CGFloat biasSwipeThreshold = 18.0;
 @interface UIKeyboardLayoutStar : UIView
 - (id)keyHitTest:(CGPoint)point;
 - (void)setKeyboardBias:(long long)bias;
+- (double)biasedKeyboardWidthRatio;
+- (id)keyplane;
+- (id)renderConfig;
 @end
 
 @interface UIKeyboardPreferencesController : NSObject
@@ -220,6 +224,22 @@ static const CGFloat biasSwipeThreshold = 18.0;
 @interface UIKBTree : NSObject
 - (NSString *)representedString;
 - (NSString *)displayString;
+- (NSArray *)keys;
+- (bool)visible;
+- (CGRect)frame;
+@end
+
+@interface UIKBKeyplaneView : UIView
+- (id)factory;
+@end
+
+@interface UIKBRenderFactory : NSObject
+- (double)keyCornerRadius;
+- (id)controlKeyBackgroundColorName;
+@end
+
+@interface UIKBRenderConfig : NSObject
+- (bool)lightKeyboard;
 @end
 
 static int classifyKey(id key) {
@@ -296,49 +316,92 @@ static UIKeyboardImpl *ActiveKeyboard() {
 	return [implClass respondsToSelector:@selector(activeInstance)] ? [implClass activeInstance] : nil;
 }
 
-// Sits over the one-handed escape arrow, pinned to it, so it follows the arrow
-// to either side and to any width.
-@interface KeyboardControllerToolsView : UIStackView
-@property (nonatomic, weak) UIView *escapeButton;
+// One tool drawn as a key, the symbol in a fixed slot so the names line up.
+@interface KeyboardControllerToolButton : UIButton
+@property (nonatomic, readonly) UIImageView *symbolView;
+@property (nonatomic, readonly) UILabel *nameLabel;
 @end
 
-@implementation KeyboardControllerToolsView {
-	CGFloat _symbolWidth;
+@implementation KeyboardControllerToolButton
+- (instancetype)initWithSymbol:(NSString *)symbol name:(NSString *)name {
+	self = [super initWithFrame:CGRectZero];
+	if ( self ) {
+		_symbolView = [[UIImageView alloc] initWithImage:[UIImage systemImageNamed:symbol]];
+		_symbolView.contentMode = UIViewContentModeCenter;
+		_nameLabel = [[UILabel alloc] init];
+		_nameLabel.text = name;
+		_nameLabel.adjustsFontSizeToFitWidth = YES;
+		_nameLabel.minimumScaleFactor = 0.5;
+		[self addSubview:_symbolView];
+		[self addSubview:_nameLabel];
+		self.clipsToBounds = YES;
+	}
+	return self;
 }
+@end
+
+// Fills the gap beside the one-handed keyboard, on whichever side the escape
+// arrow is.
+@interface KeyboardControllerToolsView : UIView
+@property (nonatomic, weak) UIView *escapeButton;
+@property (nonatomic, assign) CGFloat spacing;
+@end
+
+@implementation KeyboardControllerToolsView
 - (instancetype)initWithEscapeButton:(UIView *)escapeButton {
 	self = [super initWithFrame:CGRectZero];
 	if ( self ) {
 		_escapeButton = escapeButton;
-		self.axis = UILayoutConstraintAxisVertical;
-		self.distribution = UIStackViewDistributionFillEqually;
-		self.translatesAutoresizingMaskIntoConstraints = NO;
-		[self addTool:@"chevron.left" label:@"Move cursor left" action:@selector(cursorLeft)];
-		[self addTool:@"chevron.right" label:@"Move cursor right" action:@selector(cursorRight)];
-		[self addTool:@"doc.on.doc" label:@"Copy" action:@selector(copyText)];
-		[self addTool:@"doc.on.clipboard" label:@"Paste" action:@selector(pasteText)];
+		[self addTool:@"chevron.left" name:@"Left" label:@"Move cursor left" action:@selector(cursorLeft)];
+		[self addTool:@"chevron.right" name:@"Right" label:@"Move cursor right" action:@selector(cursorRight)];
+		[self addTool:@"doc.on.doc" name:@"Copy" label:@"Copy" action:@selector(copyText)];
+		[self addTool:@"doc.on.clipboard" name:@"Paste" label:@"Paste" action:@selector(pasteText)];
 	}
 	return self;
 }
-- (void)addTool:(NSString *)symbol label:(NSString *)label action:(SEL)action {
-	UIButton *button = [UIButton buttonWithType:UIButtonTypeSystem];
-	[button setImage:[UIImage systemImageNamed:symbol] forState:UIControlStateNormal];
-	button.tintColor = [UIColor labelColor];
+- (void)addTool:(NSString *)symbol name:(NSString *)name label:(NSString *)label action:(SEL)action {
+	KeyboardControllerToolButton *button = [[KeyboardControllerToolButton alloc] initWithSymbol:symbol name:name];
 	button.accessibilityLabel = label;
 	[button addTarget:self action:action forControlEvents:UIControlEventTouchUpInside];
-	[self addArrangedSubview:button];
+	[self addSubview:button];
+}
+- (void)setSpacing:(CGFloat)spacing {
+	if ( spacing != _spacing ) {
+		_spacing = spacing;
+		[self setNeedsLayout];
+	}
+}
+- (void)applyBackground:(UIColor *)background foreground:(UIColor *)foreground cornerRadius:(CGFloat)radius {
+	for ( KeyboardControllerToolButton *button in self.subviews ) {
+		button.backgroundColor = background;
+		button.layer.cornerRadius = radius;
+		button.symbolView.tintColor = foreground;
+		button.nameLabel.textColor = foreground;
+	}
 }
 - (void)layoutSubviews {
 	[super layoutSubviews];
-	CGFloat width = self.bounds.size.width;
-	if ( width == _symbolWidth ) {
+	NSArray *buttons = self.subviews;
+	NSUInteger count = buttons.count;
+	if ( !count ) {
 		return;
 	}
-	_symbolWidth = width;
-	// Four tenths of the column, 16 pt on a 41 pt column.
-	UIImageSymbolConfiguration *config = [UIImageSymbolConfiguration configurationWithPointSize:width * 0.4];
-	for ( UIButton *button in self.arrangedSubviews ) {
-		[button setPreferredSymbolConfiguration:config forImageInState:UIControlStateNormal];
-	}
+	CGSize size = self.bounds.size;
+	CGFloat spacing = MIN(_spacing, size.height / count);
+	CGFloat height = ( size.height - spacing * ( count - 1 ) ) / count;
+	// Symbol and name at four tenths of the block height. The symbol's slot is
+	// twice that, so it and the name's trailing margin are both a fifth.
+	CGFloat glyph = height * 0.4;
+	CGFloat slot = glyph * 2;
+	UIImageSymbolConfiguration *config = [UIImageSymbolConfiguration configurationWithPointSize:glyph];
+	UIFont *font = [UIFont systemFontOfSize:glyph];
+	[buttons enumerateObjectsUsingBlock:^(KeyboardControllerToolButton *button, NSUInteger index, BOOL *stop) {
+		button.frame = CGRectMake(0, index * ( height + spacing ), size.width, height);
+		button.symbolView.frame = CGRectMake(0, 0, slot, height);
+		button.symbolView.preferredSymbolConfiguration = config;
+		button.nameLabel.frame = CGRectMake(slot, 0, MAX(0, size.width - slot - height * 0.2), height);
+		button.nameLabel.font = font;
+	}];
 }
 - (void)cursorLeft {
 	UIKeyboardImpl *keyboard = ActiveKeyboard();
@@ -367,13 +430,87 @@ static UIKeyboardImpl *ActiveKeyboard() {
 }
 @end
 
+static UIColor *NamedKeyboardColor(id name) {
+	static CGColorRef (*getNamedColor)(NSString *);
+	static dispatch_once_t onceToken;
+	dispatch_once(&onceToken, ^{
+		getNamedColor = (CGColorRef (*)(NSString *))dlsym(RTLD_DEFAULT, "UIKBGetNamedColor");
+	});
+	if ( !getNamedColor || ![name isKindOfClass:[NSString class]] ) {
+		return nil;
+	}
+	CGColorRef color = getNamedColor(name);
+	return color ? [UIColor colorWithCGColor:color] : nil;
+}
+
+// Apple's width ratio gives the gap beside the keys. The keys give the rest:
+// the top of the first row to the bottom of the last, the gap between rows,
+// and their margin to the far edge, used on the outer side of the tools.
+static void LayOutTools(KeyboardControllerToolsView *tools, UIKeyboardLayoutStar *layout, id keyplaneView) {
+	UIView *escapeButton = tools.escapeButton;
+	CGRect bounds = layout.bounds;
+	CGRect area = escapeButton.frame;
+	CGFloat spacing = 0;
+	UIView *plane = [keyplaneView isKindOfClass:[UIView class]] ? keyplaneView : nil;
+	double ratio = [layout respondsToSelector:@selector(biasedKeyboardWidthRatio)] ? [layout biasedKeyboardWidthRatio] : 0;
+	UIKBTree *keyplane = [layout respondsToSelector:@selector(keyplane)] ? [layout keyplane] : nil;
+	NSArray *keys = [keyplane respondsToSelector:@selector(keys)] ? [keyplane keys] : nil;
+	if ( ratio > 0 && ratio < 1 && [keys isKindOfClass:[NSArray class]] ) {
+		CGFloat minX = CGFLOAT_MAX, maxX = -CGFLOAT_MAX;
+		CGFloat top = CGFLOAT_MAX, bottom = -CGFLOAT_MAX, topHeight = 0, secondTop = CGFLOAT_MAX;
+		for ( UIKBTree *key in keys ) {
+			if ( ![key respondsToSelector:@selector(visible)] || ![key respondsToSelector:@selector(frame)] || ![key visible] ) {
+				continue;
+			}
+			CGRect frame = plane ? [plane convertRect:[key frame] toView:layout] : [key frame];
+			minX = MIN(minX, CGRectGetMinX(frame));
+			maxX = MAX(maxX, CGRectGetMaxX(frame));
+			bottom = MAX(bottom, CGRectGetMaxY(frame));
+			CGFloat y = CGRectGetMinY(frame);
+			if ( y < top - 0.5 ) {
+				secondTop = top;
+				top = y;
+				topHeight = frame.size.height;
+			} else if ( y <= top + 0.5 ) {
+				topHeight = MAX(topHeight, frame.size.height);
+			} else if ( y < secondTop ) {
+				secondTop = y;
+			}
+		}
+		if ( bottom > top ) {
+			if ( secondTop < CGFLOAT_MAX ) {
+				spacing = MAX(0, secondTop - top - topHeight);
+			}
+			CGFloat gap = bounds.size.width * ( 1 - ratio );
+			BOOL left = CGRectGetMidX(escapeButton.frame) < CGRectGetMidX(bounds);
+			CGFloat outer = MAX(0, left ? CGRectGetMaxX(bounds) - maxX : minX - CGRectGetMinX(bounds));
+			CGFloat width = gap - outer - spacing;
+			if ( width > 0 ) {
+				CGFloat x = left ? CGRectGetMinX(bounds) + outer : CGRectGetMaxX(bounds) - gap + spacing;
+				area = CGRectMake(x, top, width, bottom - top);
+			}
+		}
+	}
+	tools.frame = area;
+	tools.spacing = spacing;
+
+	UIKBRenderFactory *factory = [plane respondsToSelector:@selector(factory)] ? [(UIKBKeyplaneView *)plane factory] : nil;
+	UIColor *background = [factory respondsToSelector:@selector(controlKeyBackgroundColorName)] ? NamedKeyboardColor([factory controlKeyBackgroundColorName]) : nil;
+	CGFloat radius = [factory respondsToSelector:@selector(keyCornerRadius)] ? [factory keyCornerRadius] : 0;
+	UIKBRenderConfig *config = [layout respondsToSelector:@selector(renderConfig)] ? [layout renderConfig] : nil;
+	BOOL light = [config respondsToSelector:@selector(lightKeyboard)] ? [config lightKeyboard] : tools.traitCollection.userInterfaceStyle != UIUserInterfaceStyleDark;
+	[tools applyBackground:background foreground:( light ? [UIColor blackColor] : [UIColor whiteColor] ) cornerRadius:radius];
+}
+
 // The system shows and hides the escape arrow with hidden and leaves its alpha
 // at 1, so alpha is free to hide it under the tools.
-static void UpdateEscapeTools(UIView *layout) {
+static void UpdateEscapeTools(UIKeyboardLayoutStar *layout) {
 	static Ivar escapeIvar;
+	static Ivar keyplaneViewIvar;
 	static dispatch_once_t onceToken;
 	dispatch_once(&onceToken, ^{
 		escapeIvar = class_getInstanceVariable(%c(UIKeyboardLayoutStar), "_biasEscapeButton");
+		keyplaneViewIvar = class_getInstanceVariable(%c(UIKeyboardLayoutStar), "_keyplaneView");
 	});
 	if ( !escapeIvar ) {
 		return;
@@ -405,13 +542,8 @@ static void UpdateEscapeTools(UIView *layout) {
 	if ( !tools ) {
 		tools = [[KeyboardControllerToolsView alloc] initWithEscapeButton:escapeButton];
 		[layout addSubview:tools];
-		[NSLayoutConstraint activateConstraints:@[
-			[tools.leadingAnchor constraintEqualToAnchor:escapeButton.leadingAnchor],
-			[tools.trailingAnchor constraintEqualToAnchor:escapeButton.trailingAnchor],
-			[tools.topAnchor constraintEqualToAnchor:escapeButton.topAnchor],
-			[tools.bottomAnchor constraintEqualToAnchor:escapeButton.bottomAnchor]
-		]];
 	}
+	LayOutTools(tools, layout, keyplaneViewIvar ? object_getIvar(layout, keyplaneViewIvar) : nil);
 	escapeButton.alpha = 0;
 	escapeButton.userInteractionEnabled = NO;
 	tools.hidden = escapeButton.hidden;
