@@ -135,7 +135,7 @@
 		PSSpecifier *oneHandedGestureReturn = [self createSwitchSpecifierNamed:@"Swipe down on enter/return key" key:@"oneHandedGestureReturn" default:@"0"];
 		[_specifiers addObject:oneHandedGestureReturn];
 
-		PSSpecifier *oneHandedToolsGroup = [self createGroupSpecifierNamed:@"One-Handed Tools" footer:@"Replaces the arrow beside the one-handed keyboard with cursor left, cursor right, copy and paste. Swipe to return to center." key:@"oneHandedToolsGroup"];
+		PSSpecifier *oneHandedToolsGroup = [self createGroupSpecifierNamed:@"One-Handed Tools" footer:@"Replaces the arrow beside the one-handed keyboard with cursor left, cursor right, copy, paste and select all. Swipe to return to center." key:@"oneHandedToolsGroup"];
 		[_specifiers addObject:oneHandedToolsGroup];
 
 		PSSpecifier *oneHandedTools = [self createSwitchSpecifierNamed:@"Show tools beside the keyboard" key:@"oneHandedTools" default:@"0"];
