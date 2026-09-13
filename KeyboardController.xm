@@ -345,6 +345,7 @@ static UIKeyboardImpl *ActiveKeyboard() {
 @interface KeyboardControllerToolsView : UIView
 @property (nonatomic, weak) UIView *escapeButton;
 @property (nonatomic, assign) CGFloat spacing;
+@property (nonatomic, assign) BOOL layoutPending;
 @end
 
 @implementation KeyboardControllerToolsView
@@ -551,7 +552,22 @@ static void UpdateEscapeTools(UIKeyboardLayoutStar *layout) {
 		tools = [[KeyboardControllerToolsView alloc] initWithEscapeButton:escapeButton];
 		[layout addSubview:tools];
 	}
-	LayOutTools(tools, layout, keyplaneViewIvar ? object_getIvar(layout, keyplaneViewIvar) : nil);
+	// The arrow and the keys are not in place yet when the arrow is shown, so
+	// the tools are sized on the next turn of the main queue.
+	if ( !tools.layoutPending ) {
+		tools.layoutPending = YES;
+		__weak KeyboardControllerToolsView *weakTools = tools;
+		__weak UIKeyboardLayoutStar *weakLayout = layout;
+		Ivar planeIvar = keyplaneViewIvar;
+		dispatch_async(dispatch_get_main_queue(), ^{
+			KeyboardControllerToolsView *pendingTools = weakTools;
+			UIKeyboardLayoutStar *pendingLayout = weakLayout;
+			pendingTools.layoutPending = NO;
+			if ( pendingTools && pendingLayout && pendingTools.superview == pendingLayout ) {
+				LayOutTools(pendingTools, pendingLayout, planeIvar ? object_getIvar(pendingLayout, planeIvar) : nil);
+			}
+		});
+	}
 	escapeButton.alpha = 0;
 	escapeButton.userInteractionEnabled = NO;
 	tools.hidden = escapeButton.hidden;
