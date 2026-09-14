@@ -263,6 +263,10 @@ static const CGFloat biasSwipeThreshold = 18.0;
 - (bool)lightKeyboard;
 @end
 
+@interface CALayer (KeyboardController)
+- (void)setAllowsGroupBlending:(BOOL)allowsGroupBlending;
+@end
+
 static int classifyKey(id key) {
 	if ( !key ) {
 		return keyNone;
@@ -358,6 +362,7 @@ static UIKeyboardImpl *ActiveKeyboard() {
 @property (nonatomic, readonly) UILabel *nameLabel;
 @property (nonatomic, readonly) CALayer *keyLayer;
 @property (nonatomic, readonly) CALayer *edgeLayer;
+@property (nonatomic, readonly) CAShapeLayer *edgeMask;
 @property (nonatomic, strong) KeyboardControllerKeyStyle *style;
 @end
 
@@ -365,7 +370,14 @@ static UIKeyboardImpl *ActiveKeyboard() {
 - (instancetype)initWithSymbol:(NSString *)symbol name:(NSString *)name {
 	self = [super initWithFrame:CGRectZero];
 	if ( self ) {
+		// As on UIKBKeyView, so the key's blend reaches the keyboard backdrop
+		// instead of the transparent group, which burns to black.
+		if ( [self.layer respondsToSelector:@selector(setAllowsGroupBlending:)] ) {
+			[self.layer setAllowsGroupBlending:NO];
+		}
 		_edgeLayer = [CALayer layer];
+		_edgeMask = [CAShapeLayer layer];
+		_edgeLayer.mask = _edgeMask;
 		_keyLayer = [CALayer layer];
 		[self.layer addSublayer:_edgeLayer];
 		[self.layer addSublayer:_keyLayer];
@@ -412,7 +424,23 @@ static UIKeyboardImpl *ActiveKeyboard() {
 	[CATransaction begin];
 	[CATransaction setDisableActions:YES];
 	_keyLayer.frame = bounds;
-	_edgeLayer.frame = CGRectOffset(bounds, 0, _style.edgeOffset);
+	CGFloat offset = _style.edgeOffset;
+	_edgeLayer.frame = CGRectOffset(bounds, 0, offset);
+	// The edge shows only below the key, so none of it sits under the key's
+	// blend or rims its top corners.
+	CGFloat width = CGRectGetWidth(bounds), height = CGRectGetHeight(bounds);
+	CGFloat bottom = height - offset;
+	CGFloat radius = MAX(0, MIN(_style.cornerRadius, MIN(width / 2, bottom)));
+	UIBezierPath *path = [UIBezierPath bezierPath];
+	[path moveToPoint:CGPointMake(0, bottom - radius)];
+	[path addArcWithCenter:CGPointMake(radius, bottom - radius) radius:radius startAngle:M_PI endAngle:M_PI_2 clockwise:NO];
+	[path addLineToPoint:CGPointMake(width - radius, bottom)];
+	[path addArcWithCenter:CGPointMake(width - radius, bottom - radius) radius:radius startAngle:M_PI_2 endAngle:0 clockwise:NO];
+	[path addLineToPoint:CGPointMake(width, height)];
+	[path addLineToPoint:CGPointMake(0, height)];
+	[path closePath];
+	_edgeMask.frame = _edgeLayer.bounds;
+	_edgeMask.path = path.CGPath;
 	[CATransaction commit];
 }
 @end
