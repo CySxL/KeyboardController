@@ -449,7 +449,6 @@ static UIKeyboardImpl *ActiveKeyboard() {
 // arrow is.
 @interface KeyboardControllerToolsView : UIView
 @property (nonatomic, weak) UIView *escapeButton;
-@property (nonatomic, assign) CGFloat spacing;
 @property (nonatomic, assign) BOOL layoutPending;
 @end
 
@@ -472,12 +471,6 @@ static UIKeyboardImpl *ActiveKeyboard() {
 	[button addTarget:self action:action forControlEvents:UIControlEventTouchUpInside];
 	[self addSubview:button];
 }
-- (void)setSpacing:(CGFloat)spacing {
-	if ( spacing != _spacing ) {
-		_spacing = spacing;
-		[self setNeedsLayout];
-	}
-}
 - (void)applyStyle:(KeyboardControllerKeyStyle *)style {
 	for ( KeyboardControllerToolButton *button in self.subviews ) {
 		button.style = style;
@@ -492,8 +485,10 @@ static UIKeyboardImpl *ActiveKeyboard() {
 		return;
 	}
 	CGSize size = self.bounds.size;
-	CGFloat spacing = MIN(_spacing, size.height / count);
-	CGFloat height = ( size.height - spacing * ( count - 1 ) ) / count;
+	// Each gap a quarter of a block, as Zhuyin's five rows split, so the blocks
+	// are the same height beside any keyboard of the same height.
+	CGFloat height = size.height / ( count + ( count - 1 ) * 0.25 );
+	CGFloat spacing = height * 0.25;
 	// Symbol and name at four tenths of the block height. The symbol's slot is
 	// twice that, so it and the name's trailing margin are both a fifth.
 	CGFloat glyph = height * 0.4;
@@ -583,9 +578,9 @@ static BOOL ControlOpacities(UIKBRenderTraits *traits) {
 }
 
 // Place and look come from the keys as the factory draws them: the top of the
-// first row to the bottom of the last, the gaps between rows and between keys,
-// the margin to the outer edge, and the colours and blend of the bottom row's
-// first key, which is 123 or ABC.
+// first row to the bottom of the last, the gap between keys, the margin to the
+// outer edge, and the colours and blend of the bottom row's first key, which is
+// 123 or ABC.
 static void LayOutTools(KeyboardControllerToolsView *tools, UIKeyboardLayoutStar *layout, id keyplaneView) {
 	UIView *escapeButton = tools.escapeButton;
 	CGRect bounds = layout.bounds;
@@ -597,34 +592,27 @@ static void LayOutTools(KeyboardControllerToolsView *tools, UIKeyboardLayoutStar
 		keys = nil;
 	}
 
-	CGFloat top = CGFLOAT_MAX, secondTop = CGFLOAT_MAX, bottom = -CGFLOAT_MAX;
+	CGFloat top = CGFLOAT_MAX, bottom = -CGFLOAT_MAX;
 	UIKBTree *bottomKey = nil;
 	for ( UIKBTree *key in keys ) {
 		if ( ![key respondsToSelector:@selector(visible)] || ![key respondsToSelector:@selector(frame)] || ![key visible] ) {
 			continue;
 		}
 		CGRect frame = [key frame];
-		CGFloat y = CGRectGetMinY(frame);
-		if ( y < top - 0.5 ) {
-			secondTop = top;
-			top = y;
-		} else if ( y > top + 0.5 && y < secondTop ) {
-			secondTop = y;
-		}
+		top = MIN(top, CGRectGetMinY(frame));
 		CGFloat maxY = CGRectGetMaxY(frame);
 		if ( maxY > bottom + 0.5 || ( maxY >= bottom - 0.5 && CGRectGetMinX(frame) < CGRectGetMinX([bottomKey frame]) ) ) {
 			bottom = maxY;
 			bottomKey = key;
 		}
 	}
-	UIKBTree *topLeft = nil, *topNext = nil, *topRight = nil, *secondRow = nil;
+	UIKBTree *topLeft = nil, *topNext = nil, *topRight = nil;
 	for ( UIKBTree *key in keys ) {
 		if ( ![key respondsToSelector:@selector(visible)] || ![key respondsToSelector:@selector(frame)] || ![key visible] ) {
 			continue;
 		}
 		CGRect frame = [key frame];
-		CGFloat y = CGRectGetMinY(frame);
-		if ( fabs(y - top) <= 0.5 ) {
+		if ( fabs(CGRectGetMinY(frame) - top) <= 0.5 ) {
 			if ( !topLeft || CGRectGetMinX(frame) < CGRectGetMinX([topLeft frame]) ) {
 				topNext = topLeft;
 				topLeft = key;
@@ -634,21 +622,16 @@ static void LayOutTools(KeyboardControllerToolsView *tools, UIKeyboardLayoutStar
 			if ( !topRight || CGRectGetMaxX(frame) > CGRectGetMaxX([topRight frame]) ) {
 				topRight = key;
 			}
-		} else if ( !secondRow && fabs(y - secondTop) <= 0.5 ) {
-			secondRow = key;
 		}
 	}
 
 	CGRect area = escapeButton.frame;
-	CGFloat spacing = 0;
 	UIKBRenderTraits *controlTraits = TraitsForKey(factory, bottomKey, keyplane);
 	CGRect first = DrawnFrame(TraitsForKey(factory, topLeft, keyplane), plane, layout);
 	CGRect next = DrawnFrame(TraitsForKey(factory, topNext, keyplane), plane, layout);
 	CGRect last = DrawnFrame(TraitsForKey(factory, topRight, keyplane), plane, layout);
-	CGRect second = DrawnFrame(TraitsForKey(factory, secondRow, keyplane), plane, layout);
 	CGRect lowest = DrawnFrame(controlTraits, plane, layout);
 	if ( !CGRectIsNull(first) && !CGRectIsNull(next) && !CGRectIsNull(last) && !CGRectIsNull(lowest) ) {
-		spacing = CGRectIsNull(second) ? 0 : MAX(0, CGRectGetMinY(second) - CGRectGetMaxY(first));
 		CGFloat keyGap = MAX(0, CGRectGetMinX(next) - CGRectGetMaxX(first));
 		BOOL left = CGRectGetMidX(escapeButton.frame) < CGRectGetMidX(bounds);
 		CGFloat x, width;
@@ -665,7 +648,6 @@ static void LayOutTools(KeyboardControllerToolsView *tools, UIKeyboardLayoutStar
 		}
 	}
 	tools.frame = area;
-	tools.spacing = spacing;
 
 	KeyboardControllerKeyStyle *style = [KeyboardControllerKeyStyle new];
 	style.color = BackgroundColor(controlTraits);
