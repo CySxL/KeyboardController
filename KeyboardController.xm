@@ -577,6 +577,14 @@ static BOOL ControlOpacities(UIKBRenderTraits *traits) {
 	return [traits respondsToSelector:@selector(controlOpacities)] && [traits controlOpacities];
 }
 
+// The last blocks measured on a keyplane with rows, for one without, such as
+// emoji. Placed from the layout's bottom, which stays put when emoji grows it.
+static BOOL toolsMeasured;
+static CGSize toolsSize;
+static CGFloat toolsMargin;
+static CGFloat toolsBottomInset;
+static KeyboardControllerKeyStyle *toolsStyle;
+
 // Place and look come from the keys as the factory draws them: the top of the
 // first row to the bottom of the last, the gap between keys, the margin to the
 // outer edge, and the colours and blend of the bottom row's first key, which is
@@ -625,7 +633,8 @@ static void LayOutTools(KeyboardControllerToolsView *tools, UIKeyboardLayoutStar
 		}
 	}
 
-	CGRect area = escapeButton.frame;
+	BOOL left = CGRectGetMidX(escapeButton.frame) < CGRectGetMidX(bounds);
+	CGRect area = CGRectNull;
 	UIKBRenderTraits *controlTraits = TraitsForKey(factory, bottomKey, keyplane);
 	CGRect first = DrawnFrame(TraitsForKey(factory, topLeft, keyplane), plane, layout);
 	CGRect next = DrawnFrame(TraitsForKey(factory, topNext, keyplane), plane, layout);
@@ -633,7 +642,6 @@ static void LayOutTools(KeyboardControllerToolsView *tools, UIKeyboardLayoutStar
 	CGRect lowest = DrawnFrame(controlTraits, plane, layout);
 	if ( !CGRectIsNull(first) && !CGRectIsNull(next) && !CGRectIsNull(last) && !CGRectIsNull(lowest) ) {
 		CGFloat keyGap = MAX(0, CGRectGetMinX(next) - CGRectGetMaxX(first));
-		BOOL left = CGRectGetMidX(escapeButton.frame) < CGRectGetMidX(bounds);
 		CGFloat x, width;
 		if ( left ) {
 			x = CGRectGetMinX(bounds) + MAX(0, CGRectGetMaxX(bounds) - CGRectGetMaxX(last));
@@ -647,7 +655,24 @@ static void LayOutTools(KeyboardControllerToolsView *tools, UIKeyboardLayoutStar
 			area = CGRectMake(x, CGRectGetMinY(first), width, height);
 		}
 	}
+	if ( CGRectIsNull(area) ) {
+		if ( !toolsMeasured ) {
+			// Nothing to draw the tools from yet, so the system's arrow stays.
+			tools.hidden = YES;
+			escapeButton.alpha = 1;
+			escapeButton.userInteractionEnabled = YES;
+			return;
+		}
+		CGFloat x = left ? CGRectGetMinX(bounds) + toolsMargin : CGRectGetMaxX(bounds) - toolsMargin - toolsSize.width;
+		tools.frame = CGRectMake(x, CGRectGetMaxY(bounds) - toolsBottomInset - toolsSize.height, toolsSize.width, toolsSize.height);
+		[tools applyStyle:toolsStyle];
+		return;
+	}
 	tools.frame = area;
+	tools.hidden = escapeButton.hidden;
+	toolsSize = area.size;
+	toolsMargin = left ? CGRectGetMinX(area) - CGRectGetMinX(bounds) : CGRectGetMaxX(bounds) - CGRectGetMaxX(area);
+	toolsBottomInset = CGRectGetMaxY(bounds) - CGRectGetMaxY(area);
 
 	KeyboardControllerKeyStyle *style = [KeyboardControllerKeyStyle new];
 	style.color = BackgroundColor(controlTraits);
@@ -691,6 +716,8 @@ static void LayOutTools(KeyboardControllerToolsView *tools, UIKeyboardLayoutStar
 	UIKBRenderConfig *config = [layout respondsToSelector:@selector(renderConfig)] ? [layout renderConfig] : nil;
 	BOOL light = [config respondsToSelector:@selector(lightKeyboard)] ? [config lightKeyboard] : tools.traitCollection.userInterfaceStyle != UIUserInterfaceStyleDark;
 	style.foreground = light ? [UIColor blackColor] : [UIColor whiteColor];
+	toolsStyle = style;
+	toolsMeasured = YES;
 	[tools applyStyle:style];
 }
 
@@ -753,7 +780,7 @@ static void UpdateEscapeTools(UIKeyboardLayoutStar *layout) {
 	}
 	escapeButton.alpha = 0;
 	escapeButton.userInteractionEnabled = NO;
-	tools.hidden = escapeButton.hidden;
+	tools.hidden = escapeButton.hidden || !toolsMeasured;
 }
 
 
