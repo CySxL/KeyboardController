@@ -28,6 +28,29 @@
 #endif
 
 static const CGFloat kHeaderIconSide = 80.0;
+static const CGFloat kHeaderGap = 16.0;
+// The largest that fits beside the icon on a 14 Pro Max (254 pt), so the text
+// is drawn unscaled there.
+static const CGFloat kHeaderNameSize = 27.0;
+static const CGFloat kHeaderVersionSize = 15.0;
+static const CGFloat kHeaderSchemeSize = 13.0;
+static const CGFloat kHeaderNameToVersion = 24.0;
+static const CGFloat kHeaderVersionToScheme = 19.0;
+
+static UIFont *HeaderNameFont(CGFloat size) {
+	UIFontDescriptor *bold = [[UIFontDescriptor preferredFontDescriptorWithTextStyle:UIFontTextStyleLargeTitle]
+		fontDescriptorWithSymbolicTraits:UIFontDescriptorTraitBold];
+	return [UIFont fontWithDescriptor:bold size:size];
+}
+
+// Where the name's baseline sits against the icon's middle, the block centred
+// on it, so a larger name would grow upward only.
+static CGFloat HeaderNameBaselineOffset(CGFloat scale) {
+	UIFont *reference = HeaderNameFont(kHeaderNameSize * scale);
+	UIFont *scheme = [UIFont systemFontOfSize:kHeaderSchemeSize * scale];
+	CGFloat height = reference.ascender + (kHeaderNameToVersion + kHeaderVersionToScheme) * scale - scheme.descender;
+	return reference.ascender - height / 2.0;
+}
 
 // The icons are loose files in a subdirectory, so imageNamed: does not find
 // them and imageWithContentsOfFile: does no scale search. Pick the suffix from
@@ -44,7 +67,14 @@ static UIImage *KeyboardControllerIcon(NSString *name) {
 	return nil;
 }
 
-@implementation KeyboardControllerHeaderCell
+@implementation KeyboardControllerHeaderCell {
+	UILabel *_name;
+	UILabel *_version;
+	UILabel *_scheme;
+	UIStackView *_text;
+	NSLayoutConstraint *_nameBaseline;
+	CGFloat _scale;
+}
 
 - (instancetype)initWithStyle:(UITableViewCellStyle)style reuseIdentifier:(NSString *)identifier specifier:(PSSpecifier *)specifier {
 	self = [super initWithStyle:style reuseIdentifier:identifier specifier:specifier];
@@ -59,26 +89,65 @@ static UIImage *KeyboardControllerIcon(NSString *name) {
 	icon.layer.cornerRadius = kHeaderIconSide * 0.225;
 	[self.contentView addSubview:icon];
 
-	UILabel *version = [[UILabel alloc] init];
-	version.text = @"Version " PACKAGE_VERSION "\n" PACKAGE_SCHEME;
-	version.numberOfLines = 2;
-	version.font = [UIFont systemFontOfSize:14.0];
-	version.textColor = [UIColor systemGrayColor];
-	version.textAlignment = NSTextAlignmentCenter;
-	version.translatesAutoresizingMaskIntoConstraints = NO;
-	[self.contentView addSubview:version];
+	_name = [[UILabel alloc] init];
+	_name.text = @"Keyboard Controller";
+	// The icon's grey, sampled from it.
+	_name.textColor = [UIColor colorWithRed:0x75 / 255.0 green:0x75 / 255.0 blue:0x75 / 255.0 alpha:1.0];
 
+	_version = [[UILabel alloc] init];
+	_version.text = @"Version " PACKAGE_VERSION;
+	_version.textColor = [UIColor systemGrayColor];
+
+	_scheme = [[UILabel alloc] init];
+	_scheme.text = @PACKAGE_SCHEME.capitalizedString;
+	_scheme.textColor = [UIColor systemGrayColor];
+
+	// Spacing is baseline to baseline, so the large name does not push the two
+	// lines under it away with its own leading.
+	_text = [[UIStackView alloc] initWithArrangedSubviews:@[ _name, _version, _scheme ]];
+	_text.axis = UILayoutConstraintAxisVertical;
+	_text.alignment = UIStackViewAlignmentLeading;
+	_text.baselineRelativeArrangement = YES;
+	_text.translatesAutoresizingMaskIntoConstraints = NO;
+	[self.contentView addSubview:_text];
+	_nameBaseline = [_name.firstBaselineAnchor constraintEqualToAnchor:icon.centerYAnchor];
+	[self applyTextScale:1.0];
+
+	UILayoutGuide *margins = self.contentView.layoutMarginsGuide;
 	[NSLayoutConstraint activateConstraints:@[
 		[icon.widthAnchor constraintEqualToConstant:kHeaderIconSide],
 		[icon.heightAnchor constraintEqualToConstant:kHeaderIconSide],
-		[icon.centerXAnchor constraintEqualToAnchor:self.contentView.centerXAnchor],
-		[icon.topAnchor constraintEqualToAnchor:self.contentView.topAnchor constant:10.0],
-		[version.topAnchor constraintEqualToAnchor:icon.bottomAnchor constant:8.0],
-		[version.centerXAnchor constraintEqualToAnchor:self.contentView.centerXAnchor],
-		[version.widthAnchor constraintEqualToAnchor:self.contentView.widthAnchor]
+		[icon.leadingAnchor constraintEqualToAnchor:margins.leadingAnchor],
+		[icon.centerYAnchor constraintEqualToAnchor:self.contentView.centerYAnchor],
+		[_text.leadingAnchor constraintEqualToAnchor:icon.trailingAnchor constant:kHeaderGap],
+		_nameBaseline
 	]];
 
 	return self;
+}
+
+// The text block at a fraction of its full size: fonts and spacing together, so
+// the three lines keep their proportions. The icon is never scaled.
+- (void)applyTextScale:(CGFloat)scale {
+	if ( scale == _scale ) {
+		return;
+	}
+	_scale = scale;
+	_name.font = HeaderNameFont(kHeaderNameSize * scale);
+	_version.font = [UIFont systemFontOfSize:kHeaderVersionSize * scale];
+	_scheme.font = [UIFont systemFontOfSize:kHeaderSchemeSize * scale];
+	[_text setCustomSpacing:kHeaderNameToVersion * scale afterView:_name];
+	[_text setCustomSpacing:kHeaderVersionToScheme * scale afterView:_version];
+	_nameBaseline.constant = HeaderNameBaselineOffset(scale);
+}
+
+// Full size wherever the name fits beside the icon; a narrower phone shrinks the
+// whole block by the name's overflow rather than truncating it.
+- (void)layoutSubviews {
+	CGFloat available = CGRectGetWidth(self.contentView.layoutMarginsGuide.layoutFrame) - kHeaderIconSide - kHeaderGap;
+	CGFloat natural = [_name.text sizeWithAttributes:@{ NSFontAttributeName: HeaderNameFont(kHeaderNameSize) }].width;
+	[self applyTextScale:( available > 0 && natural > available ) ? available / natural : 1.0];
+	[super layoutSubviews];
 }
 
 - (void)setSeparatorStyle:(UITableViewCellSeparatorStyle)style {
