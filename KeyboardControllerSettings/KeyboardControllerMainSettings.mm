@@ -164,6 +164,129 @@ static UIImage *KeyboardControllerIcon(NSString *name) {
 
 @end
 
+static const CGFloat kCreditAvatarSide = 38.0;
+
+// The row indents its text by the width of its image, so a symbol takes the
+// same square as the avatar.
+static UIImage *CreditSymbol(NSString *name) {
+	UIImageSymbolConfiguration *configuration = [UIImageSymbolConfiguration configurationWithPointSize:20.0 weight:UIImageSymbolWeightMedium];
+	UIImage *symbol = [UIImage systemImageNamed:name withConfiguration:configuration] ?: [UIImage systemImageNamed:@"link" withConfiguration:configuration];
+	if ( !symbol ) {
+		return nil;
+	}
+	CGFloat side = kCreditAvatarSide;
+	UIGraphicsImageRenderer *renderer = [[UIGraphicsImageRenderer alloc] initWithSize:CGSizeMake(side, side)];
+	UIImage *padded = [renderer imageWithActions:^(UIGraphicsImageRendererContext *context) {
+		[symbol drawInRect:CGRectMake((side - symbol.size.width) / 2.0, (side - symbol.size.height) / 2.0, symbol.size.width, symbol.size.height)];
+	}];
+	return [padded imageWithRenderingMode:UIImageRenderingModeAlwaysTemplate];
+}
+
+// A row carrying kcBranch hangs off the row above it: a line from that row's
+// avatar bends into it, and the row above, carrying kcBranchBelow, drops its
+// separator and draws the top of the line.
+@implementation KeyboardControllerCreditCell {
+	UIImageView *_avatarView;
+	CAShapeLayer *_branch;
+}
+
+- (instancetype)initWithStyle:(UITableViewCellStyle)style reuseIdentifier:(NSString *)identifier specifier:(PSSpecifier *)specifier {
+	self = [super initWithStyle:UITableViewCellStyleSubtitle reuseIdentifier:identifier specifier:specifier];
+	if ( !self ) {
+		return nil;
+	}
+	self.detailTextLabel.text = [specifier propertyForKey:@"subtitle"] ?: @"";
+	self.detailTextLabel.textColor = [UIColor systemGrayColor];
+	self.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
+	BOOL branch = [[specifier propertyForKey:@"kcBranch"] isEqual:@YES];
+	if ( branch || [[specifier propertyForKey:@"kcBranchBelow"] isEqual:@YES] ) {
+		_branch = [CAShapeLayer layer];
+		_branch.fillColor = nil;
+		_branch.lineWidth = 1.5;
+		_branch.lineCap = kCALineCapRound;
+		[self.contentView.layer addSublayer:_branch];
+	}
+	if ( branch ) {
+		// An empty slot as wide as the avatar, so the text lines up with the name above.
+		UIGraphicsBeginImageContextWithOptions(CGSizeMake(kCreditAvatarSide, 16.0), NO, [UIScreen mainScreen].scale);
+		[specifier setProperty:UIGraphicsGetImageFromCurrentImageContext() forKey:@"iconImage"];
+		UIGraphicsEndImageContext();
+		UIImageSymbolConfiguration *small = [UIImageSymbolConfiguration configurationWithPointSize:11.0 weight:UIImageSymbolWeightSemibold];
+		NSString *symbol = [specifier propertyForKey:@"kcBranchSymbol"];
+		if ( ![symbol isKindOfClass:[NSString class]] ) {
+			symbol = @"chevron.left.forwardslash.chevron.right";
+		}
+		NSTextAttachment *attachment = [[NSTextAttachment alloc] init];
+		attachment.image = [[UIImage systemImageNamed:symbol withConfiguration:small] imageWithTintColor:[UIColor linkColor] renderingMode:UIImageRenderingModeAlwaysOriginal];
+		NSMutableAttributedString *title = [[NSMutableAttributedString alloc] init];
+		if ( attachment.image ) {
+			[title appendAttributedString:[NSAttributedString attributedStringWithAttachment:attachment]];
+		}
+		[title appendAttributedString:[[NSAttributedString alloc] initWithString:[@"  " stringByAppendingString:specifier.name ?: @""]
+			attributes:@{ NSFontAttributeName: [UIFont systemFontOfSize:13.0], NSForegroundColorAttributeName: [UIColor linkColor] }]];
+		self.textLabel.attributedText = title;
+		// nil rather than empty, so the subtitle style centres the one line.
+		self.detailTextLabel.text = nil;
+		return self;
+	}
+	UIImage *avatar = [specifier propertyForKey:@"kcAvatar"];
+	if ( ![avatar isKindOfClass:[UIImage class]] ) {
+		self.imageView.tintColor = [UIColor secondaryLabelColor];
+		return self;
+	}
+	// An empty image of the right size, so the row lays out before the avatar is drawn into it.
+	UIGraphicsBeginImageContextWithOptions(CGSizeMake(kCreditAvatarSide, kCreditAvatarSide), NO, [UIScreen mainScreen].scale);
+	[specifier setProperty:UIGraphicsGetImageFromCurrentImageContext() forKey:@"iconImage"];
+	UIGraphicsEndImageContext();
+	_avatarView = [[UIImageView alloc] initWithFrame:self.imageView.bounds];
+	_avatarView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
+	_avatarView.contentMode = UIViewContentModeScaleAspectFill;
+	_avatarView.clipsToBounds = YES;
+	_avatarView.layer.cornerRadius = kCreditAvatarSide * 0.5;
+	_avatarView.layer.minificationFilter = kCAFilterTrilinear;
+	_avatarView.image = avatar;
+	[self.imageView addSubview:_avatarView];
+	return self;
+}
+
+- (void)layoutSubviews {
+	[super layoutSubviews];
+	if ( !_branch ) {
+		return;
+	}
+	BOOL branch = [[self.specifier propertyForKey:@"kcBranch"] isEqual:@YES];
+	if ( !branch ) {
+		for ( UIView *view in self.subviews ) {
+			if ( [NSStringFromClass([view class]) hasSuffix:@"SeparatorView"] ) {
+				view.hidden = YES;
+			}
+		}
+	}
+	_branch.strokeColor = [[UIColor systemGray3Color] resolvedColorWithTraitCollection:self.traitCollection].CGColor;
+	CGRect slot = [self.contentView convertRect:self.imageView.bounds fromView:self.imageView];
+	CGFloat x = round(CGRectGetMidX(slot));
+	UIBezierPath *path = [UIBezierPath bezierPath];
+	if ( branch ) {
+		CGFloat y = round(CGRectGetMidY(slot));
+		CGFloat r = 6.0;
+		[path moveToPoint:CGPointMake(x, 0)];
+		[path addLineToPoint:CGPointMake(x, y - r)];
+		[path addQuadCurveToPoint:CGPointMake(x + r, y) controlPoint:CGPointMake(x, y)];
+		[path addLineToPoint:CGPointMake(CGRectGetMaxX(slot), y)];
+	} else {
+		[path moveToPoint:CGPointMake(x, CGRectGetMaxY(slot) + 3.0)];
+		[path addLineToPoint:CGPointMake(x, CGRectGetMaxY(self.contentView.bounds))];
+	}
+	_branch.path = path.CGPath;
+}
+
+- (void)traitCollectionDidChange:(UITraitCollection *)previous {
+	[super traitCollectionDidChange:previous];
+	[self setNeedsLayout];
+}
+
+@end
+
 // Removes what was typed into the test fields by versions that stored it.
 static void ClearStoredTestFields(void) {
 	NSArray *keys = @[
@@ -431,38 +554,39 @@ static void ClearStoredTestFields(void) {
 	[resetSettings setProperty:@YES forKey:@"hasIcon"];
 	[_standardSpecifiers addObject:resetSettings];
 
-	PSSpecifier* relatedLinks = [PSSpecifier groupSpecifierWithName:@"Related Links"];
-	[_standardSpecifiers addObject:relatedLinks];
+	PSSpecifier *credits = [PSSpecifier preferenceSpecifierNamed:@"Credits" target:self set:NULL get:NULL detail:nil cell:PSGroupCell edit:nil];
+	[credits setProperty:@"© CySxL 2026" forKey:@"footerText"];
+	[_standardSpecifiers addObject:credits];
 
-	PSSpecifier *sourceCode = [self createButtonSpecifierNamed:@"Source Code"];
-	sourceCode->action = @selector(sourceCode);
-	[sourceCode setProperty:KeyboardControllerIcon(@"code") forKey:@"iconImage"];
-	[sourceCode setProperty:@YES forKey:@"hasIcon"];
-	[_standardSpecifiers addObject:sourceCode];
-
-	PSSpecifier *knownIssues = [self createButtonSpecifierNamed:@"Known Issues"];
-	knownIssues->action = @selector(knownIssues);
-	[knownIssues setProperty:KeyboardControllerIcon(@"bug") forKey:@"iconImage"];
-	[knownIssues setProperty:@YES forKey:@"hasIcon"];
-	[_standardSpecifiers addObject:knownIssues];
-
-	PSSpecifier *linkBigboss = [self createButtonSpecifierNamed:@"Tomasz Poliszuk @ BigBoss"];
-	linkBigboss->action = @selector(TomaszPoliszukAtBigBoss);
-	[linkBigboss setProperty:KeyboardControllerIcon(@"packages") forKey:@"iconImage"];
-	[linkBigboss setProperty:@YES forKey:@"hasIcon"];
-	[_standardSpecifiers addObject:linkBigboss];
-
-	PSSpecifier *linkGithub = [self createButtonSpecifierNamed:@"Tomasz Poliszuk @ Github"];
-	linkGithub->action = @selector(TomaszPoliszukAtGithub);
-	[linkGithub setProperty:KeyboardControllerIcon(@"github") forKey:@"iconImage"];
-	[linkGithub setProperty:@YES forKey:@"hasIcon"];
-	[_standardSpecifiers addObject:linkGithub];
-
-	PSSpecifier *linkCySxLGithub = [self createButtonSpecifierNamed:@"CySxL @ Github (iOS 16 maintainer)"];
-	linkCySxLGithub->action = @selector(CySxLAtGithub);
-	[linkCySxLGithub setProperty:KeyboardControllerIcon(@"github") forKey:@"iconImage"];
-	[linkCySxLGithub setProperty:@YES forKey:@"hasIcon"];
-	[_standardSpecifiers addObject:linkCySxLGithub];
+	// Name, subtitle, action, picture, then an optional symbol. A row with no
+	// picture is a branch of the row above it.
+	NSArray *rows = @[
+		@[ @"Tomasz Poliszuk", @"Original Developer", NSStringFromSelector(@selector(tomaszPoliszuk)), @"" ],
+		@[ @"Source Code", @"", NSStringFromSelector(@selector(sourceCode)), @"", @"chevron.left.forwardslash.chevron.right" ],
+		@[ @"CySxL", @"Maintainer · iOS 16 Port", NSStringFromSelector(@selector(cySxL)), @"avatar" ]
+	];
+	PSSpecifier *previous = nil;
+	for ( NSArray *row in rows ) {
+		PSSpecifier *credit = [PSSpecifier preferenceSpecifierNamed:row[0] target:self set:NULL get:NULL detail:nil cell:PSLinkCell edit:nil];
+		[credit setProperty:[KeyboardControllerCreditCell class] forKey:@"cellClass"];
+		[credit setProperty:row[1] forKey:@"subtitle"];
+		if ( row.count > 4 ) {
+			[credit setProperty:@YES forKey:@"kcBranch"];
+			[credit setProperty:row[4] forKey:@"kcBranchSymbol"];
+			[credit setProperty:@34 forKey:@"height"];
+			[previous setProperty:@YES forKey:@"kcBranchBelow"];
+		} else {
+			UIImage *avatar = [row[3] length] ? [UIImage imageNamed:row[3] inBundle:[NSBundle bundleForClass:[self class]] withConfiguration:nil] : nil;
+			if ( avatar ) {
+				[credit setProperty:avatar forKey:@"kcAvatar"];
+			} else {
+				[credit setProperty:CreditSymbol(@"chevron.left.forwardslash.chevron.right") forKey:@"iconImage"];
+			}
+		}
+		credit->action = NSSelectorFromString(row[2]);
+		[_standardSpecifiers addObject:credit];
+		previous = credit;
+	}
 }
 - (void)setPreferenceValue:(id)value specifier:(PSSpecifier*)specifier {
 	if ( [specifier propertyForKey:kTransientField] ) {
@@ -503,29 +627,16 @@ static void ClearStoredTestFields(void) {
 	[resetSettingsAlert addAction:confirm];
 	[self presentViewController:resetSettingsAlert animated:YES completion:nil];
 }
+- (void)openURLString:(NSString *)string {
+	[[UIApplication sharedApplication] openURL:[NSURL URLWithString:string] options:@{} completionHandler:nil];
+}
+- (void)tomaszPoliszuk {
+	[self openURLString:@"https://github.com/tomaszpoliszuk"];
+}
 - (void)sourceCode {
-	NSURL *sourceCode = [NSURL URLWithString:@"https://github.com/tomaszpoliszuk/KeyboardController"];
-	[[UIApplication sharedApplication] openURL:sourceCode options:@{} completionHandler:nil];
+	[self openURLString:@"https://github.com/tomaszpoliszuk/KeyboardController"];
 }
-- (void)knownIssues {
-	NSURL *knownIssues = [NSURL URLWithString:@"https://github.com/tomaszpoliszuk/KeyboardController/issues"];
-	[[UIApplication sharedApplication] openURL:knownIssues options:@{} completionHandler:nil];
-}
-- (void)TomaszPoliszukAtBigBoss {
-	UIApplication *application = [UIApplication sharedApplication];
-	NSString *tweakName = @"Keyboard Controller";
-	tweakName = [tweakName stringByReplacingOccurrencesOfString:@" " withString:@"+"];
-	NSURL *packageDescriptionURL = [NSURL URLWithString:[@"http://apt.thebigboss.org/developer-packages.php?name=" stringByAppendingString:tweakName]];
-	[application openURL:packageDescriptionURL options:@{} completionHandler:nil];
-}
-- (void)TomaszPoliszukAtGithub {
-	UIApplication *application = [UIApplication sharedApplication];
-	NSURL *githubProfileURL = [NSURL URLWithString:@"https://github.com/tomaszpoliszuk/"];
-	[application openURL:githubProfileURL options:@{} completionHandler:nil];
-}
-- (void)CySxLAtGithub {
-	UIApplication *application = [UIApplication sharedApplication];
-	NSURL *githubProfileURL = [NSURL URLWithString:@"https://github.com/CySxL/"];
-	[application openURL:githubProfileURL options:@{} completionHandler:nil];
+- (void)cySxL {
+	[self openURLString:@"https://github.com/CySxL"];
 }
 @end

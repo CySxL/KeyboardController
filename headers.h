@@ -46,6 +46,9 @@
 @interface KeyboardControllerHeaderCell : PSTableCell
 @end
 
+@interface KeyboardControllerCreditCell : PSTableCell
+@end
+
 @interface KeyboardControllerMainSettings : PSListController
 @property (nonatomic, strong) NSMutableArray *standardSpecifiers;
 @end
