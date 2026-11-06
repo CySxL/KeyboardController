@@ -184,7 +184,8 @@ static UIImage *CreditSymbol(NSString *name) {
 
 // A row carrying kcBranch hangs off the row above it: a line from that row's
 // avatar bends into it, and the row above, carrying kcBranchBelow, drops its
-// separator and draws the top of the line.
+// separator and draws the top of the line. A branch with another under it
+// carries both and runs the line on past its own bend.
 @implementation KeyboardControllerCreditCell {
 	UIImageView *_avatarView;
 	CAShapeLayer *_branch;
@@ -255,7 +256,7 @@ static UIImage *CreditSymbol(NSString *name) {
 		return;
 	}
 	BOOL branch = [[self.specifier propertyForKey:@"kcBranch"] isEqual:@YES];
-	if ( !branch ) {
+	if ( [[self.specifier propertyForKey:@"kcBranchBelow"] isEqual:@YES] ) {
 		for ( UIView *view in self.subviews ) {
 			if ( [NSStringFromClass([view class]) hasSuffix:@"SeparatorView"] ) {
 				view.hidden = YES;
@@ -273,6 +274,10 @@ static UIImage *CreditSymbol(NSString *name) {
 		[path addLineToPoint:CGPointMake(x, y - r)];
 		[path addQuadCurveToPoint:CGPointMake(x + r, y) controlPoint:CGPointMake(x, y)];
 		[path addLineToPoint:CGPointMake(CGRectGetMaxX(slot), y)];
+		if ( [[self.specifier propertyForKey:@"kcBranchBelow"] isEqual:@YES] ) {
+			[path moveToPoint:CGPointMake(x, y - r)];
+			[path addLineToPoint:CGPointMake(x, CGRectGetMaxY(self.contentView.bounds))];
+		}
 	} else {
 		[path moveToPoint:CGPointMake(x, CGRectGetMaxY(slot) + 3.0)];
 		[path addLineToPoint:CGPointMake(x, CGRectGetMaxY(self.contentView.bounds))];
@@ -564,6 +569,7 @@ static void ClearStoredTestFields(void) {
 		@[ @"Tomasz Poliszuk", @"Original Developer", NSStringFromSelector(@selector(tomaszPoliszuk)), @"" ],
 		@[ @"Source Code", @"", NSStringFromSelector(@selector(sourceCode)), @"", @"chevron.left.forwardslash.chevron.right" ],
 		@[ @"CySxL", @"Maintainer · iOS 16 Port", NSStringFromSelector(@selector(cySxL)), @"avatar" ],
+		@[ @"Source Code", @"", NSStringFromSelector(@selector(forkSourceCode)), @"", @"chevron.left.forwardslash.chevron.right" ],
 		@[ @"Tip on Ko-fi", @"", NSStringFromSelector(@selector(kofi)), @"", @"cup.and.saucer" ]
 	];
 	PSSpecifier *previous = nil;
@@ -636,6 +642,9 @@ static void ClearStoredTestFields(void) {
 }
 - (void)sourceCode {
 	[self openURLString:@"https://github.com/tomaszpoliszuk/KeyboardController"];
+}
+- (void)forkSourceCode {
+	[self openURLString:@"https://github.com/CySxL/KeyboardController"];
 }
 - (void)cySxL {
 	[self openURLString:@"https://github.com/CySxL"];
