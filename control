@@ -1,15 +1,17 @@
 Package: com.tomaszpoliszuk.keyboardcontroller
-Depends: firmware (>= 15.0), mobilesubstrate, preferenceloader
 Name: Keyboard Controller
 Version: 1.5.5
 Architecture: iphoneos-arm
-Description: Control your Keyboard
-Homepage: http://moreinfo.thebigboss.org/moreinfo/depiction.php?file=keyboardcontrollerDp
-Depiction: http://moreinfo.thebigboss.org/moreinfo/depiction.php?file=keyboardcontrollerDp
-Maintainer: BigBoss <bigboss@thebigboss.org>
-Author: Tomasz Poliszuk
-Sponsor: thebigboss.org <http://thebigboss.org>
-Section: Tweaks
-dev: tomaszpoliszuk
-Tag: purpose::extension
+Depends: firmware (>= 15.0), mobilesubstrate, preferenceloader
+Description: A fork of Tomasz Poliszuk's Keyboard Controller.
+ Changes how the keyboard looks & behaves in every app.
+ * force a light or dark keyboard.
+ * swap the keyboard type & the return key type.
+ * turn the one-handed keyboard on & off with a swipe down on the 123, delete or return key.
+ * swipe down to dismiss the keyboard.
+ * show tools beside the keyboard.
+ * try any keyboard type in the testing area.
+Author: Tomasz Poliszuk, CySxL
+Maintainer: CySxL
 Icon: https://raw.githubusercontent.com/CySxL/KeyboardController/master/KeyboardControllerSettings/Resources/icons/KeyboardController@3x.png
+Section: Tweaks
