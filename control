@@ -1,6 +1,6 @@
 Package: com.cysxl.keyboardcontroller
 Name: Keyboard Controller
-Version: 1.5.7
+Version: 1.5.8
 Architecture: iphoneos-arm
 Depends: firmware (>= 15.0), mobilesubstrate, preferenceloader
 Conflicts: com.tomaszpoliszuk.keyboardcontroller
