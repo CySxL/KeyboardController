@@ -563,7 +563,8 @@ static void ClearStoredTestFields(void) {
 	NSArray *rows = @[
 		@[ @"Tomasz Poliszuk", @"Original Developer", NSStringFromSelector(@selector(tomaszPoliszuk)), @"" ],
 		@[ @"Source Code", @"", NSStringFromSelector(@selector(sourceCode)), @"", @"chevron.left.forwardslash.chevron.right" ],
-		@[ @"CySxL", @"Maintainer · iOS 16 Port", NSStringFromSelector(@selector(cySxL)), @"avatar" ]
+		@[ @"CySxL", @"Maintainer · iOS 16 Port", NSStringFromSelector(@selector(cySxL)), @"avatar" ],
+		@[ @"Tip on Ko-fi", @"", NSStringFromSelector(@selector(kofi)), @"", @"cup.and.saucer" ]
 	];
 	PSSpecifier *previous = nil;
 	for ( NSArray *row in rows ) {
@@ -638,5 +639,8 @@ static void ClearStoredTestFields(void) {
 }
 - (void)cySxL {
 	[self openURLString:@"https://github.com/CySxL"];
+}
+- (void)kofi {
+	[self openURLString:@"https://ko-fi.com/cysxl"];
 }
 @end
