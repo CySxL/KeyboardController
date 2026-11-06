@@ -1,8 +1,11 @@
-Package: com.tomaszpoliszuk.keyboardcontroller
+Package: com.cysxl.keyboardcontroller
 Name: Keyboard Controller
 Version: 1.5.5
 Architecture: iphoneos-arm
 Depends: firmware (>= 15.0), mobilesubstrate, preferenceloader
+Conflicts: com.tomaszpoliszuk.keyboardcontroller
+Replaces: com.tomaszpoliszuk.keyboardcontroller
+Provides: com.tomaszpoliszuk.keyboardcontroller
 Description: A fork of Tomasz Poliszuk's Keyboard Controller.
  Changes how the keyboard looks & behaves in every app.
  * force a light or dark keyboard.
